@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { activeInstrument } from "../state";
-import { formatNumber, texts } from "../texts";
+import { activeReport } from "../state";
+import { formatDate, formatNumber, texts } from "../texts";
 import GroupIcon from "../GroupIcon.vue";
 
 type GroupGap = {
@@ -65,35 +65,47 @@ type Report = {
 
 type ReportSource = "ai" | "fallback";
 
+const emit = defineEmits<{ "back-reports": [] }>();
+
 const panel = ref<Panel | null>(null);
 const loading = ref(true);
 const error = ref(false);
 const selectedDimension = ref("");
-const relevantOnly = ref(true);
+const relevantOnly = ref(false);
 const RELEVANT_GAP = 0.5;
 
 const report = ref<Report | null>(null);
 const reportSource = ref<ReportSource>("fallback");
-const reportLoading = ref(true);
-const reportError = ref(false);
+const reportDate = ref("");
 const reportOpen = ref(true);
 const observationsOpen = ref(true);
 const actionsOpen = ref(true);
+
+type Snapshot = {
+  source: ReportSource;
+  created_at: string;
+  panel: Panel;
+  report: Report;
+};
 
 async function load() {
   loading.value = true;
   error.value = false;
 
-  void loadReport();
-
   try {
-    const query = activeInstrument.value
-      ? `?instrument=${encodeURIComponent(activeInstrument.value)}`
-      : "";
-    const response = await fetch(`/api/panel${query}`);
+    if (!activeReport.value) throw new Error("Sin informe");
+
+    const response = await fetch(
+      `/api/reports/${encodeURIComponent(activeReport.value)}`,
+    );
     if (!response.ok) throw new Error(String(response.status));
-    panel.value = (await response.json()) as Panel;
-    selectedDimension.value = bestDimension(panel.value);
+
+    const snapshot = (await response.json()) as Snapshot;
+    panel.value = snapshot.panel;
+    report.value = snapshot.report;
+    reportSource.value = snapshot.source;
+    reportDate.value = snapshot.created_at;
+    selectedDimension.value = bestDimension(snapshot.panel);
   } catch {
     error.value = true;
   } finally {
@@ -101,32 +113,8 @@ async function load() {
   }
 }
 
-/** El informe no bloquea las gráficas: se pide en paralelo. */
-async function loadReport() {
-  reportLoading.value = true;
-  reportError.value = false;
-
-  try {
-    const query = activeInstrument.value
-      ? `?instrument=${encodeURIComponent(activeInstrument.value)}`
-      : "";
-    const response = await fetch(`/api/report${query}`);
-    if (!response.ok) throw new Error(String(response.status));
-    const data = (await response.json()) as {
-      source: ReportSource;
-      report: Report;
-    };
-    report.value = data.report;
-    reportSource.value = data.source;
-  } catch {
-    reportError.value = true;
-  } finally {
-    reportLoading.value = false;
-  }
-}
-
 onMounted(load);
-watch(activeInstrument, load);
+watch(activeReport, load);
 
 /** Arranca en la dimensión con la brecha positiva más alta. */
 function bestDimension(current: Panel): string {
@@ -359,6 +347,14 @@ const suppressedCrosses = computed(() =>
 
 <template>
   <main id="main" class="page" tabindex="-1">
+    <button
+      type="button"
+      class="link back-link"
+      @click="emit('back-reports')"
+    >
+      ← {{ texts.reports.back }}
+    </button>
+
     <header class="header">
       <p v-if="panel" class="context">{{ panel.instrument.title }}</p>
       <h1>{{ texts.panel.title }}</h1>
@@ -370,6 +366,9 @@ const suppressedCrosses = computed(() =>
             Object.keys(panel.axisValues).length,
           )
         }}
+      </p>
+      <p v-if="reportDate" class="context-line">
+        {{ texts.reports.savedAt(formatDate(reportDate)) }}
       </p>
     </header>
 
@@ -437,10 +436,9 @@ const suppressedCrosses = computed(() =>
               </button>
             </h2>
             <p>{{ texts.report.subtitle }}</p>
-            <p class="ai-help">{{ texts.report.help }}</p>
           </div>
           <span
-            v-if="report && !reportLoading"
+            v-if="report"
             class="ai-badge"
             :class="reportSource"
           >
@@ -449,19 +447,7 @@ const suppressedCrosses = computed(() =>
         </header>
 
         <div v-show="reportOpen" id="report-panel">
-        <div v-if="reportLoading" class="ai-status">
-          <p class="ai-status-title">{{ texts.report.loading }}</p>
-          <p>{{ texts.report.loadingDetail }}</p>
-        </div>
-
-        <div v-else-if="reportError" class="ai-status">
-          <p class="ai-status-title">{{ texts.report.error }}</p>
-          <button type="button" class="button-secondary" @click="loadReport">
-            {{ texts.report.retry }}
-          </button>
-        </div>
-
-        <template v-else-if="report">
+        <template v-if="report">
           <div class="ai-report-body">
             <section class="ai-block">
               <h3>

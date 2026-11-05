@@ -22,7 +22,7 @@ import {
 import type { GapResult } from "./gaps.ts";
 
 /** Sube cuando cambia el prompt o el contrato: invalida la caché. */
-const PROMPT_VERSION = "report-v5";
+const PROMPT_VERSION = "report-v6";
 
 /** Brecha mínima para que un cruce entre el payload. */
 const CROSS_RELEVANCE = 0.5;
@@ -34,6 +34,10 @@ const CONTRASTS_PER_DIMENSION = 2;
 /** Términos que el informe nunca debe usar: son diagnósticos o acusaciones. */
 const FORBIDDEN_TERMS =
   /discriminaci|dislexia|discalculia|tdah|autismo|asperger|trastorno|s[ií]ndrome|ansiedad|depresi[oó]n|hiperactividad|d[eé]ficit de atenci[oó]n/i;
+
+/** Jerga que no debe aparecer en "observaciones": el gestor no la conoce. */
+const OBSERVATION_JARGON =
+  /brecha|índice|indice|\bdimensi[oó]n\b|promedio|punto de corte|\bpuntos\b|\bla media\b|escala|0\s*a\s*100/i;
 
 export type ReportPayload = {
   sample: { responses: number; k: number; kCross: number };
@@ -112,12 +116,17 @@ REGLAS INVIOLABLES
 7. Español neutro, para un gestor escolar sin formación técnica.
 
 CÓMO ESCRIBIR
-8. Frases cortas y directas. Una idea por punto. Máximo 2 frases y 30 palabras.
-9. Nada de jerga: no escribas "índice", "dimensión", "brecha" ni "punto de corte".
-   Di "nivel de barrera (de 0 a 100)", "tema" y "diferencia con la media".
-10. Cita como máximo dos cifras por punto: la diferencia y, si aporta, cuántas
-    personas son. Nada de enumerar números.
-11. Empieza por lo que le pasa al grupo, no por cómo se calculó.
+8. Escribe para alguien que no ha visto las gráficas y no sabe estadística.
+   Frases cortas. Una idea por punto. Máximo 2 frases y 25 palabras.
+9. En "observaciones" no cites cifras ni expliques cálculos. Fuera de las
+   edades que forman parte del nombre de un grupo, no escribas números.
+   No uses "brecha", "índice", "dimensión", "media", "promedio", "puntos",
+   "escala" ni "0 a 100".
+10. Cada observación es una conclusión, no un dato. Nombra al grupo y el tema
+    con palabras de todos los días: "les cuesta más", "encuentran más
+    obstáculos", "participan menos", "tienen menos oportunidades".
+11. Empieza por el grupo y por lo que le ocurre. No empieces por el cálculo
+    ni por la cifra.
 12. En "observaciones", 3 o 4 puntos. En "afrontamiento", 3 o 4 acciones concretas
     y realistas para una escuela, ONG o club. En "derivacion", di en lenguaje llano
     con quién consultarlo antes de actuar.
@@ -128,9 +137,9 @@ CÓMO ESCRIBIR
 15. No repitas el mismo grupo en varios puntos. Si un grupo destaca en varios temas,
     resúmelo en una sola frase y usa los demás puntos para otros grupos.
 
-EJEMPLO DE TONO (los corchetes son huecos, no cifras)
-título: "[Grupo] siente más barreras en [tema]"
-detalle: "Este grupo está [diferencia] puntos por encima de la media. Son [n] personas."
+EJEMPLO DE TONO (sin cifras)
+título: "Quienes viven en zonas rurales encuentran más dificultades para conectarse"
+detalle: "Les cuesta más seguir las actividades por internet. Conviene preguntarles qué necesitan."
 
 DEVUELVE ÚNICAMENTE ESTE JSON:
 { "observaciones": [{ "titulo": string, "detalle": string }],
@@ -232,12 +241,6 @@ export function payloadHash(payload: ReportPayload, model: string): string {
     .digest("hex");
 }
 
-function formatNumber(value: number, signed = false): string {
-  const text = Math.abs(value).toFixed(1).replace(".", ",");
-  if (!signed) return text;
-  return value > 0 ? `+${text}` : value < 0 ? `−${text}` : "0,0";
-}
-
 /** Todos los números que el modelo puede citar. */
 function allowedNumbers(payload: ReportPayload): Set<string> {
   const values = new Set<string>(["0"]);
@@ -300,6 +303,32 @@ function hasOnlyKnownNumbers(text: string, allowed: Set<string>): boolean {
   return true;
 }
 
+/** Números que forman parte de un nombre de grupo ("18-34", "55"). */
+function labelNumbers(payload: ReportPayload): Set<string> {
+  const values = new Set<string>();
+
+  for (const dimension of payload.dimensions) {
+    for (const group of dimension.groups) {
+      for (const match of group.name.match(/\d+(?:[.,]\d+)?/g) ?? []) {
+        values.add(match);
+        values.add(match.replace(",", "."));
+      }
+    }
+  }
+
+  return values;
+}
+
+/** En observaciones solo se permiten cifras que formen parte de un nombre de grupo. */
+function hasOnlyLabelNumbers(text: string, allowed: Set<string>): boolean {
+  const matches = text.match(/\d+(?:[.,]\d+)?/g) ?? [];
+
+  return matches.every((match) => {
+    const normalized = match.replace(",", ".");
+    return allowed.has(match) || allowed.has(normalized);
+  });
+}
+
 function outputProblem(report: Report, payload: ReportPayload): string | null {
   const allowed = allowedNumbers(payload);
   const texts = [
@@ -318,6 +347,20 @@ function outputProblem(report: Report, payload: ReportPayload): string | null {
 
   if (!texts.every((text) => hasOnlyKnownNumbers(text, allowed))) {
     return "cita cifras que no están en el payload";
+  }
+
+  const observations = report.observaciones.flatMap((item) => [
+    item.titulo,
+    item.detalle,
+  ]);
+
+  if (observations.some((text) => OBSERVATION_JARGON.test(text))) {
+    return "usa jerga técnica en las observaciones";
+  }
+
+  const labels = labelNumbers(payload);
+  if (!observations.every((text) => hasOnlyLabelNumbers(text, labels))) {
+    return "cita cifras en las observaciones";
   }
 
   return null;
@@ -463,7 +506,7 @@ function rankGroups(payload: ReportPayload): RankedGroup[] {
     .sort((a, b) => b.gap * b.n - a.gap * a.n);
 }
 
-/** Plantilla determinista: mismos números, sin red y sin interpretación libre. */
+/** Plantilla determinista: mismas conclusiones, sin red y sin interpretación libre. */
 export function buildFallbackReport(payload: ReportPayload): Report {
   const ranked = rankGroups(payload);
   const observations: ReportObservation[] = [];
@@ -492,16 +535,17 @@ export function buildFallbackReport(payload: ReportPayload): Report {
 
   for (const item of picks) {
     observations.push({
-      titulo: `${item.name}, más barreras en ${item.dimensionName.toLowerCase()}`,
-      detalle: `Este grupo está ${formatNumber(item.gap)} puntos por encima de la media. Son ${item.n} personas.`,
+      titulo: `${item.name}, con más dificultades en ${item.dimensionName.toLowerCase()}`,
+      detalle:
+        "Este grupo encuentra más obstáculos que el resto en este tema. Conviene escuchar qué le frena.",
     });
   }
 
   const highestLevel = [...payload.dimensions].sort((a, b) => b.index - a.index)[0];
   if (highestLevel) {
     observations.push({
-      titulo: "El tema con más barrera",
-      detalle: `${highestLevel.name} es el tema donde se declara más barrera: ${formatNumber(highestLevel.index)} sobre 100.`,
+      titulo: "El tema con más dificultades",
+      detalle: `${highestLevel.name} es el tema donde se declaran más dificultades. Es un buen punto para empezar.`,
     });
   }
 
@@ -509,7 +553,7 @@ export function buildFallbackReport(payload: ReportPayload): Report {
     observations.push({
       titulo: "Sin diferencias claras",
       detalle:
-        "Los datos no permiten señalar un grupo concreto. Conviene ampliar la muestra antes de sacar conclusiones.",
+        "Los datos no muestran un grupo con más dificultades que el resto. Conviene ampliar la muestra antes de sacar conclusiones.",
     });
   }
 
@@ -519,7 +563,7 @@ export function buildFallbackReport(payload: ReportPayload): Report {
   const advertencias: string[] = [];
   if (payload.suppressed.length > 0) {
     advertencias.push(
-      `Algunas comparaciones no se muestran porque tienen menos de ${payload.sample.kCross} personas: ${payload.suppressed.join(", ")}.`,
+      "Algunas comparaciones no se muestran porque hay grupos demasiado pequeños para proteger el anonimato.",
     );
   }
   advertencias.push("Son autoinformes: no permiten diagnosticar a nadie.");

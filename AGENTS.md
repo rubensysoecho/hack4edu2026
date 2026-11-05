@@ -141,7 +141,7 @@ Los datos NUNCA los produce la IA.
 Si la IA devuelve una cifra que no estaba en el payload, el informe se descarta
 y se sirve la plantilla. `temperature: 0` + caché por hash del payload. Si la API
 falla o faltan `OPENROUTER_API_KEY` y `OPENROUTER_MODEL`, se sirve una plantilla
-determinista con los mismos números.
+determinista con las mismas conclusiones a partir de los mismos datos.
 
 Frase para el pitch: **"el sistema mide, la IA explica"**.
 
@@ -186,7 +186,16 @@ responses   (id, instrument_id, form_response_id, submitted_at)
 answers     (response_id, item_id, dimension, value)   -- resultado, escala 1..5
 attributes  (response_id, axis, value)                 -- corte del respondente
 analyses    (id, payload_hash, report_json, created_at) -- cache de la IA
+reports     (id, instrument_id, instrument_title, payload_hash, source, model,
+             response_count, dimension_count, axis_count, panel_json,
+             report_json, created_at)                   -- snapshots de Informes
 ```
+
+`reports` guarda la foto congelada que consume la pantalla de Informes: `panel_json`
+y `report_json` no se recalculan al abrirla. El índice único
+`(instrument_id, payload_hash, source)` reutiliza snapshots idénticos y permite que
+convivan uno con IA y otro de plantilla para los mismos datos. Borrar un snapshot no
+toca el cuestionario ni sus respuestas.
 
 `questions.id` es global dentro del instrumento (`<instrumento>.<código>`) y es lo
 que referencia `answers.item_id`. `questions.google_item_id` guarda el id que asigna
@@ -225,9 +234,12 @@ comparables: ni celdas suprimidas, ni `prefiero_no_responder`, ni el nombre del
 centro. Además se recorta a los grupos de mayor impacto (brecha × personas) y un
 par de contrastes por dimensión, para que el modelo no tenga que resumir 150 filas.
 
-Salida validada con Zod y dos filtros posteriores:
+Salida validada con Zod y tres filtros posteriores:
 
 - **Cifras**: todo número citado debe existir en el payload; si no, se descarta.
+- **Observaciones**: no citan cifras (salvo edades que formen parte de un nombre
+  de grupo) ni jerga técnica ("brecha", "índice", "dimensión", "media",
+  "promedio", "puntos", "escala").
 - **Vocabulario**: se descartan términos clínicos o la palabra "discriminación".
 
 ```json
@@ -261,12 +273,17 @@ REGLAS INVIOLABLES
 7. Español neutro, para un gestor escolar sin formación técnica.
 
 CÓMO ESCRIBIR
-8. Frases cortas y directas. Una idea por punto. Máximo 2 frases y 30 palabras.
-9. Nada de jerga: no escribas "índice", "dimensión", "brecha" ni "punto de corte".
-   Di "nivel de barrera (de 0 a 100)", "tema" y "diferencia con la media".
-10. Cita como máximo dos cifras por punto: la diferencia y, si aporta, cuántas
-    personas son. Nada de enumerar números.
-11. Empieza por lo que le pasa al grupo, no por cómo se calculó.
+8. Escribe para alguien que no ha visto las gráficas y no sabe estadística.
+   Frases cortas. Una idea por punto. Máximo 2 frases y 25 palabras.
+9. En "observaciones" no cites cifras ni expliques cálculos. Fuera de las
+   edades que forman parte del nombre de un grupo, no escribas números.
+   No uses "brecha", "índice", "dimensión", "media", "promedio", "puntos",
+   "escala" ni "0 a 100".
+10. Cada observación es una conclusión, no un dato. Nombra al grupo y el tema
+    con palabras de todos los días: "les cuesta más", "encuentran más
+    obstáculos", "participan menos", "tienen menos oportunidades".
+11. Empieza por el grupo y por lo que le ocurre. No empieces por el cálculo
+    ni por la cifra.
 12. En "observaciones", 3 o 4 puntos. En "afrontamiento", 3 o 4 acciones concretas
     y realistas para una escuela, ONG o club. En "derivacion", di en lenguaje llano
     con quién consultarlo antes de actuar.
@@ -277,9 +294,9 @@ CÓMO ESCRIBIR
 15. No repitas el mismo grupo en varios puntos. Si un grupo destaca en varios temas,
     resúmelo en una sola frase y usa los demás puntos para otros grupos.
 
-EJEMPLO DE TONO (los corchetes son huecos, no cifras)
-título: "[Grupo] siente más barreras en [tema]"
-detalle: "Este grupo está [diferencia] puntos por encima de la media. Son [n] personas."
+EJEMPLO DE TONO (sin cifras)
+título: "Quienes viven en zonas rurales encuentran más dificultades para conectarse"
+detalle: "Les cuesta más seguir las actividades por internet. Conviene preguntarles qué necesitan."
 
 DEVUELVE ÚNICAMENTE ESTE JSON:
 { "observaciones": [{ "titulo": string, "detalle": string }],

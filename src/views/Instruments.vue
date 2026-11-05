@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { activeInstrument } from "../state";
 import { texts } from "../texts";
 import FormPreview from "../FormPreview.vue";
 
@@ -25,7 +24,7 @@ type Catalog = {
   axes: { id: string; name: string; description: string; values: string[] }[];
 };
 
-const emit = defineEmits<{ "view-gaps": [] }>();
+const emit = defineEmits<{ "open-report": [id: string] }>();
 
 const list = ref<Summary[]>([]);
 const catalog = ref<Catalog | null>(null);
@@ -42,6 +41,8 @@ const axisSelection = ref<string[]>([
 ]);
 const saving = ref(false);
 const generateError = ref(false);
+const openingId = ref<string | null>(null);
+const openError = ref(false);
 
 /** Dimensiones elegidas, en el orden del catálogo. */
 const selectedDimensions = computed(() =>
@@ -111,9 +112,22 @@ function open() {
   axisSelection.value = ["genero", "edad", "idioma", "ubicacion"];
 }
 
+async function createReport(instrumentId: string): Promise<string> {
+  const response = await fetch("/api/reports", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ instrumentId }),
+  });
+
+  if (!response.ok) throw new Error(String(response.status));
+
+  const report = (await response.json()) as { id: string };
+  return report.id;
+}
+
 /**
- * Crea el cuestionario, lo rellena con respuestas sintéticas y abre el panel.
- * El servidor hace ambas cosas en la misma petición (`demo: true`).
+ * Crea el cuestionario, lo rellena con respuestas sintéticas y guarda su
+ * primer informe. El servidor hace la creación y la simulación juntas.
  */
 async function generate() {
   saving.value = true;
@@ -134,9 +148,21 @@ async function generate() {
     if (!response.ok) throw new Error(String(response.status));
 
     const instrument = (await response.json()) as { id: string };
+
+    let reportId: string;
+    try {
+      reportId = await createReport(instrument.id);
+    } catch {
+      // El cuestionario ya existe: se cierra el constructor y se ofrece
+      // reintentar desde su ficha.
+      creating.value = false;
+      await loadList();
+      openError.value = true;
+      return;
+    }
+
     creating.value = false;
-    activeInstrument.value = instrument.id;
-    emit("view-gaps");
+    emit("open-report", reportId);
   } catch {
     generateError.value = true;
   } finally {
@@ -144,9 +170,19 @@ async function generate() {
   }
 }
 
-function viewGaps(id: string) {
-  activeInstrument.value = id;
-  emit("view-gaps");
+/** Abre el informe de un cuestionario existente; lo crea si aún no existe. */
+async function openReport(instrumentId: string) {
+  openingId.value = instrumentId;
+  openError.value = false;
+
+  try {
+    const reportId = await createReport(instrumentId);
+    emit("open-report", reportId);
+  } catch {
+    openError.value = true;
+  } finally {
+    openingId.value = null;
+  }
 }
 </script>
 
@@ -287,11 +323,24 @@ function viewGaps(id: string) {
             }}
           </p>
 
-          <button type="button" class="link" @click="viewGaps(i.id)">
-            {{ texts.instruments.viewGaps }}
+          <button
+            type="button"
+            class="link"
+            :disabled="openingId === i.id"
+            @click="openReport(i.id)"
+          >
+            {{
+              openingId === i.id
+                ? texts.reports.preparing
+                : texts.instruments.viewGaps
+            }}
           </button>
         </li>
       </ul>
+
+      <p v-if="openError" class="status error">
+        {{ texts.reports.prepareError }}
+      </p>
     </template>
   </main>
 </template>

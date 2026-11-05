@@ -4,11 +4,18 @@ import Logo from "./Logo.vue";
 import Landing from "./views/Landing.vue";
 import Gaps from "./views/Gaps.vue";
 import Instruments from "./views/Instruments.vue";
+import Reports from "./views/Reports.vue";
+import { activeReport } from "./state";
 import { texts } from "./texts";
 
-type View = "landing" | "gaps" | "instruments";
+type View = "landing" | "reports" | "report" | "instruments";
 
 const view = ref<View>("landing");
+
+function openReport(id: string) {
+  activeReport.value = id;
+  view.value = "report";
+}
 </script>
 
 <template>
@@ -16,11 +23,11 @@ const view = ref<View>("landing");
     {{ texts.nav.skip }}
   </a>
 
-  <Landing v-if="view === 'landing'" @enter="view = 'gaps'" />
+  <Landing v-if="view === 'landing'" @enter="view = 'reports'" />
 
   <template v-else>
     <header class="topbar">
-      <button type="button" class="brand" @click="view = 'gaps'">
+      <button type="button" class="brand" @click="view = 'reports'">
         <Logo :size="26" />
         <span>{{ texts.app }}</span>
       </button>
@@ -28,11 +35,13 @@ const view = ref<View>("landing");
       <nav class="nav" :aria-label="texts.nav.label">
         <button
           type="button"
-          :class="{ active: view === 'gaps' }"
-          :aria-current="view === 'gaps' ? 'page' : undefined"
-          @click="view = 'gaps'"
+          :class="{ active: view === 'reports' || view === 'report' }"
+          :aria-current="
+            view === 'reports' || view === 'report' ? 'page' : undefined
+          "
+          @click="view = 'reports'"
         >
-          {{ texts.nav.gaps }}
+          {{ texts.nav.reports }}
         </button>
         <button
           type="button"
@@ -45,7 +54,12 @@ const view = ref<View>("landing");
       </nav>
     </header>
 
-    <Gaps v-if="view === 'gaps'" />
-    <Instruments v-else @view-gaps="view = 'gaps'" />
+    <Reports
+      v-if="view === 'reports'"
+      @open-report="openReport"
+      @new-instrument="view = 'instruments'"
+    />
+    <Gaps v-else-if="view === 'report'" @back-reports="view = 'reports'" />
+    <Instruments v-else @open-report="openReport" />
   </template>
 </template>

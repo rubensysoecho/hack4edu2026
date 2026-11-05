@@ -21,7 +21,7 @@ export const texts = {
   nav: {
     label: "Navegación principal",
     skip: "Saltar al contenido",
-    gaps: "Brechas",
+    reports: "Informes",
     instruments: "Cuestionarios",
   },
 
@@ -85,17 +85,10 @@ export const texts = {
   report: {
     title: "Informe",
     subtitle: "Lo esencial de los datos, explicado sin tecnicismos.",
-    help:
-      "Una diferencia de +3 significa que ese grupo declara 3 puntos más de barrera que la media.",
     observations: "Qué dicen los datos",
     actions: "Qué se puede hacer",
     withAi: "Con IA",
     automatic: "Automático",
-    loading: "Preparando el informe…",
-    loadingDetail:
-      "La IA está leyendo los datos. Puede tardar unos segundos; las gráficas ya están disponibles.",
-    error: "No se pudo componer el informe.",
-    retry: "Reintentar",
     fallbackNote:
       "La IA no está disponible ahora mismo. Este informe se ha generado automáticamente con los mismos datos.",
     warnings: "Ten en cuenta",
@@ -103,6 +96,32 @@ export const texts = {
     disclaimer:
       "Este informe no sustituye a un profesional. Con estos datos no se puede diagnosticar a nadie; si hace falta, que lo valore un especialista con pruebas validadas.",
     derivation: "Consúltalo con",
+  },
+
+  reports: {
+    title: "Informes",
+    subtitle:
+      "Cada informe es una foto de un cuestionario en el momento en que se generó. Elige uno para ver sus brechas.",
+    empty: "Todavía no hay informes.",
+    emptyDetail:
+      "Crea un cuestionario o abre uno existente para generar su primer informe.",
+    newInstrument: "Ir a cuestionarios",
+    view: "Ver brechas",
+    back: "Volver a informes",
+    preparing: "Preparando informe…",
+    prepareError:
+      "No se pudo preparar el informe. Comprueba que el cuestionario tenga respuestas.",
+    delete: "Borrar",
+    deleteConfirm:
+      "¿Borrar este informe? El cuestionario y sus respuestas no se tocan.",
+    deleteYes: "Sí, borrar",
+    deleting: "Borrando…",
+    deleteError: "No se pudo borrar el informe. Inténtalo de nuevo.",
+    summary: (responses: number, dimensions: number, axes: number) =>
+      `${responses} ${responses === 1 ? "respuesta" : "respuestas"} · ${dimensions} ${
+        dimensions === 1 ? "dimensión" : "dimensiones"
+      } · ${axes} ${axes === 1 ? "eje" : "ejes"}`,
+    savedAt: (date: string) => `Informe guardado el ${date}`,
   },
 
   instruments: {
@@ -202,4 +221,11 @@ export function formatNumber(value: number | null, signed = false): string {
   const text = Math.abs(value).toFixed(1).replace(".", ",");
   if (!signed) return text;
   return value > 0 ? `+${text}` : value < 0 ? `−${text}` : "0,0";
+}
+
+export function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
 }

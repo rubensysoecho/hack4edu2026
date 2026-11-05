@@ -12,44 +12,27 @@ import {
   AXES,
   DIMENSION_GROUPS,
   DIMENSIONS,
-  groupOf,
-  NON_COMPARISON_VALUES,
   questionsOf,
 } from "./catalog.ts";
-import { calcGaps } from "./gaps.ts";
 import {
-  listInstruments,
+  deleteReportSnapshot,
   listSummaries,
-  loadAnalysis,
-  loadInput,
-  saveAnalysis,
   saveInstrument,
   saveQuestion,
 } from "./db.ts";
-import {
-  analyze,
-  buildReportPayload,
-  payloadHash,
-  type ReportResult,
-} from "./ai.ts";
 import { simulateResponses } from "./simulate.ts";
-
-const K = 10;
-const K_CROSS = 20;
-const DEPTH: 1 | 2 = 2;
-
-/** Informes en vuelo: dos montajes simultáneos comparten una sola llamada. */
-const pendingReports = new Map<string, Promise<ReportResult>>();
+import {
+  buildPanel,
+  composeReport,
+  createReportSnapshot,
+  findInstrument,
+  getReport,
+  listReports,
+} from "./reports.ts";
 
 const app = new Hono();
 
 app.use("/api/*", cors());
-
-/** Instrumento pedido por query, o el más reciente. */
-function currentInstrument(id?: string) {
-  const all = listInstruments();
-  return id ? all.find((i) => i.id === id) : all[0];
-}
 
 app.get("/api/catalog", (c) =>
   c.json({ groups: DIMENSION_GROUPS, dimensions: DIMENSIONS, axes: AXES }),
@@ -121,100 +104,72 @@ app.post("/api/instruments", async (c) => {
 });
 
 app.post("/api/instruments/:id/simulate", (c) => {
-  const id = c.req.param("id");
-  const instrument = currentInstrument(id);
+  const instrument = findInstrument(c.req.param("id"));
   if (!instrument) return c.json({ error: "Instrumento no encontrado" }, 404);
 
   const created = simulateResponses(instrument.id, 800);
   return c.json({ responses: created });
 });
 
+/** Panel vivo (debug). La interfaz consume snapshots en /api/reports. */
 app.get("/api/panel", (c) => {
-  const instrument = currentInstrument(c.req.query("instrument"));
+  const instrument = findInstrument(c.req.query("instrument"));
   if (!instrument) {
     return c.json({ error: "No hay instrumentos. Ejecuta `bun run seed`." }, 404);
   }
 
-  const result = calcGaps(loadInput(instrument.id), {
-    k: K,
-    kCross: K_CROSS,
-    depth: DEPTH,
-    excludedValues: NON_COMPARISON_VALUES,
-  });
+  return c.json(buildPanel(instrument));
+});
 
-  // El grupo de navegación no se calcula: sale del catálogo.
-  const dimensions = result.dimensions.map((d) => ({
-    ...d,
-    group: groupOf(d.dimension),
-  }));
+/** Informe vivo (debug). La interfaz consume snapshots en /api/reports. */
+app.get("/api/report", async (c) => {
+  const instrument = findInstrument(c.req.query("instrument"));
+  if (!instrument) {
+    return c.json({ error: "No hay instrumentos. Ejecuta `bun run seed`." }, 404);
+  }
 
-  const axisValues = Object.fromEntries(
-    AXES.map((axis) => [axis.id, axis.values]),
-  );
+  const composed = await composeReport(instrument);
 
+  c.header("Cache-Control", "no-store");
   return c.json({
-    instrument,
-    k: K,
-    kCross: K_CROSS,
-    axisValues,
-    ...result,
-    dimensions,
+    source: composed.report.source,
+    cached: composed.cached,
+    report: composed.report,
   });
 });
 
-app.get("/api/report", async (c) => {
-  const instrument = currentInstrument(c.req.query("instrument"));
-  if (!instrument) {
-    return c.json({ error: "No hay instrumentos. Ejecuta `bun run seed`." }, 404);
+app.get("/api/reports", (c) => c.json(listReports()));
+
+app.get("/api/reports/:id", (c) => {
+  const report = getReport(c.req.param("id"));
+  if (!report) return c.json({ error: "Informe no encontrado" }, 404);
+  return c.json(report);
+});
+
+app.delete("/api/reports/:id", (c) => {
+  const deleted = deleteReportSnapshot(c.req.param("id"));
+  if (!deleted) return c.json({ error: "Informe no encontrado" }, 404);
+  return c.body(null, 204);
+});
+
+app.post("/api/reports", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  if (!body) return c.json({ error: "Cuerpo inválido" }, 400);
+
+  const instrumentId = String(body.instrumentId ?? "").trim();
+  if (!instrumentId) return c.json({ error: "Falta instrumentId" }, 400);
+
+  const instrument = findInstrument(instrumentId);
+  if (!instrument) return c.json({ error: "Instrumento no encontrado" }, 404);
+
+  try {
+    const snapshot = await createReportSnapshot(instrument);
+    return c.json(snapshot, snapshot.created ? 201 : 200);
+  } catch (error) {
+    const message = (error as Error).message;
+    const status = message.includes("no tiene respuestas") ? 400 : 500;
+    return c.json({ error: message }, status);
   }
-
-  const result = calcGaps(loadInput(instrument.id), {
-    k: K,
-    kCross: K_CROSS,
-    depth: DEPTH,
-    excludedValues: NON_COMPARISON_VALUES,
-  });
-
-  const payload = buildReportPayload(result, { k: K, kCross: K_CROSS });
-  const model = process.env.OPENROUTER_MODEL?.trim() ?? "";
-  const hash = payloadHash(payload, model);
-
-  const cached = loadAnalysis(hash);
-  if (cached) {
-    try {
-      return c.json({
-        source: "ai",
-        cached: true,
-        report: JSON.parse(cached),
-      });
-    } catch {
-      // Caché corrupta: se regenera.
-    }
-  }
-
-  let pending = pendingReports.get(hash);
-  if (!pending) {
-    pending = analyze(payload);
-    pendingReports.set(hash, pending);
-    pending
-      .catch(() => undefined)
-      .finally(() => pendingReports.delete(hash));
-  }
-
-  const report = await pending;
-  if (report.source === "ai") {
-    saveAnalysis(
-      hash,
-      JSON.stringify({
-        observaciones: report.observaciones,
-        afrontamiento: report.afrontamiento,
-        advertencias: report.advertencias,
-      }),
-    );
-  }
-
-  c.header("Cache-Control", "no-store");
-  return c.json({ source: report.source, cached: false, report });
 });
 
 app.use("/*", serveStatic({ root: "./dist" }));

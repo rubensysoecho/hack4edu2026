@@ -17,6 +17,7 @@ import {
   saveInstrument,
   saveQuestion,
 } from "./server/db.ts";
+import { createReportSnapshot, findInstrument } from "./server/reports.ts";
 import { simulateResponses } from "./server/simulate.ts";
 
 const INSTRUMENT_ID = "demo";
@@ -80,6 +81,13 @@ for (const table of axisTables) {
         : `${gap >= 0 ? "+" : ""}${gap}`;
     console.log(`${g.label.padEnd(36)} n=${String(g.n).padEnd(4)} ${text}`);
   }
+}
+
+// El seed no llama a OpenRouter: guarda el informe con la plantilla.
+const instrument = findInstrument(INSTRUMENT_ID);
+if (instrument) {
+  const snapshot = await createReportSnapshot(instrument, { useAi: false });
+  console.log(`\nInforme de demo guardado: ${snapshot.id}`);
 }
 
 db.close();

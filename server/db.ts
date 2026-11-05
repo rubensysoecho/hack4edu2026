@@ -64,6 +64,28 @@ CREATE TABLE IF NOT EXISTS analyses (
   report_json  TEXT NOT NULL,
   created_at   TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS reports (
+  id               TEXT PRIMARY KEY,
+  instrument_id    TEXT NOT NULL REFERENCES instruments(id) ON DELETE CASCADE,
+  instrument_title TEXT NOT NULL,
+  payload_hash     TEXT NOT NULL,
+  source           TEXT NOT NULL,
+  model            TEXT,
+  response_count   INTEGER NOT NULL,
+  dimension_count  INTEGER NOT NULL,
+  axis_count       INTEGER NOT NULL,
+  panel_json       TEXT NOT NULL,
+  report_json      TEXT NOT NULL,
+  created_at       TEXT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reports_instrument_hash_source
+  ON reports(instrument_id, payload_hash, source);
+
+-- Índice anterior (dos columnas): se elimina para permitir convivir un
+-- snapshot con IA y otro de plantilla para los mismos datos.
+DROP INDEX IF EXISTS idx_reports_instrument_hash;
 `;
 
 db.run(SCHEMA);
@@ -187,13 +209,101 @@ export function listSummaries(): InstrumentSummary[] {
     .all() as InstrumentSummary[];
 }
 
+export type ReportSnapshotRow = {
+  id: string;
+  instrument_id: string;
+  instrument_title: string;
+  payload_hash: string;
+  source: "ai" | "fallback";
+  model: string | null;
+  response_count: number;
+  dimension_count: number;
+  axis_count: number;
+  panel_json: string;
+  report_json: string;
+  created_at: string;
+};
+
+export type ReportSnapshotSummary = {
+  id: string;
+  instrument_id: string;
+  title: string;
+  source: "ai" | "fallback";
+  response_count: number;
+  dimension_count: number;
+  axis_count: number;
+  created_at: string;
+};
+
 export function deleteAll(): void {
+  db.run("DELETE FROM reports");
   db.run("DELETE FROM attributes");
   db.run("DELETE FROM answers");
   db.run("DELETE FROM responses");
   db.run("DELETE FROM questions");
   db.run("DELETE FROM instruments");
   db.run("DELETE FROM analyses");
+}
+
+/** Snapshot ya guardado para este instrumento, datos y fuente. */
+export function findReportSnapshot(
+  instrumentId: string,
+  payloadHash: string,
+  source: "ai" | "fallback",
+): { id: string } | null {
+  return db
+    .query(
+      `SELECT id FROM reports
+       WHERE instrument_id = ? AND payload_hash = ? AND source = ?`,
+    )
+    .get(instrumentId, payloadHash, source) as { id: string } | null;
+}
+
+export function saveReportSnapshot(row: ReportSnapshotRow): void {
+  db.query(
+    `INSERT INTO reports (
+       id, instrument_id, instrument_title, payload_hash, source, model,
+       response_count, dimension_count, axis_count, panel_json, report_json,
+       created_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  ).run(
+    row.id,
+    row.instrument_id,
+    row.instrument_title,
+    row.payload_hash,
+    row.source,
+    row.model,
+    row.response_count,
+    row.dimension_count,
+    row.axis_count,
+    row.panel_json,
+    row.report_json,
+    row.created_at,
+  );
+}
+
+export function listReportSnapshots(): ReportSnapshotSummary[] {
+  return db
+    .query(
+      `SELECT id, instrument_id, instrument_title AS title, source,
+              response_count, dimension_count, axis_count, created_at
+       FROM reports
+       ORDER BY created_at DESC`,
+    )
+    .all() as ReportSnapshotSummary[];
+}
+
+export function getReportSnapshot(id: string): ReportSnapshotRow | null {
+  return db.query("SELECT * FROM reports WHERE id = ?").get(id) as
+    | ReportSnapshotRow
+    | null;
+}
+
+/** Borra solo el snapshot; el cuestionario y sus respuestas no se tocan. */
+export function deleteReportSnapshot(id: string): boolean {
+  const result = db.query("DELETE FROM reports WHERE id = ?").run(id);
+  return result.changes > 0;
 }
 
 /** Vacía las respuestas de un instrumento (la cascada limpia answers y attributes). */

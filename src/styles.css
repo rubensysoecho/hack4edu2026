@@ -336,23 +336,6 @@ body {
   color: var(--muted);
 }
 
-.ai-report-head .ai-help {
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.ai-help::before {
-  content: "";
-  display: inline-block;
-  width: 3px;
-  height: 12px;
-  margin-right: 8px;
-  vertical-align: -1px;
-  background: var(--accent);
-  border-radius: 2px;
-}
-
 .ai-badge {
   flex: none;
   padding: 4px 10px;
@@ -1022,6 +1005,86 @@ body {
 .card .link {
   margin-top: auto;
   align-self: flex-start;
+}
+
+.report-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.report-card-head .card-title {
+  min-width: 0;
+}
+
+.report-card-head .ai-badge {
+  margin-top: 1px;
+}
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.report-actions .link {
+  margin: 0;
+  align-self: auto;
+}
+
+.report-delete {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.report-delete:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.report-confirm {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-2);
+}
+
+.report-confirm p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.report-confirm .actions {
+  gap: 8px;
+}
+
+.button.small,
+.button-secondary.small {
+  min-height: 38px;
+  padding: 7px 14px;
+  font-size: 14px;
+}
+
+.back-link {
+  display: inline-flex;
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+.back-link:hover {
+  color: var(--accent);
+}
+
+.empty .button {
+  margin-top: 18px;
 }
 
 /* ---------- Títulos de bloque y opciones ---------- */

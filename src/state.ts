@@ -1,4 +1,4 @@
 import { ref } from "vue";
 
-/** Instrumento que el panel está mostrando. */
-export const activeInstrument = ref<string | null>(null);
+/** Informe (snapshot) que la vista de brechas está mostrando. */
+export const activeReport = ref<string | null>(null);
