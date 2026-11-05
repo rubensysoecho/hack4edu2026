@@ -76,6 +76,9 @@ const report = ref<Report | null>(null);
 const reportSource = ref<ReportSource>("fallback");
 const reportLoading = ref(true);
 const reportError = ref(false);
+const reportOpen = ref(true);
+const observationsOpen = ref(true);
+const actionsOpen = ref(true);
 
 async function load() {
   loading.value = true;
@@ -379,10 +382,60 @@ const suppressedCrosses = computed(() =>
     </section>
 
     <template v-else-if="panel">
-      <section class="ai-report" aria-labelledby="report-title">
+      <section class="ai-report">
         <header class="ai-report-head">
           <div>
-            <h2 id="report-title">{{ texts.report.title }}</h2>
+            <h2 id="report-title">
+              <button
+                type="button"
+                class="disclosure"
+                :aria-expanded="reportOpen"
+                aria-controls="report-panel"
+                @click="reportOpen = !reportOpen"
+              >
+                <svg
+                  v-if="reportSource === 'ai' && report"
+                  class="ai-spark"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M10 2.5l1.6 4.1 4.4 1.6-4.4 1.6L10 14l-1.6-4.2L4 8.2l4.4-1.6L10 2.5Z" />
+                  <path d="M15.5 13.5l.8 1.9 1.7.8-1.7.8-.8 2-.8-2-1.7-.8 1.7-.8.8-1.9Z" />
+                </svg>
+                <svg
+                  v-else
+                  class="ai-spark"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5.5 3h7l3 3v11h-10V3Z" />
+                  <path d="M12 3v3.5h3.5M8 10h4M8 13h4" />
+                </svg>
+                <span>{{ texts.report.title }}</span>
+                <svg
+                  class="chevron"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m5.5 8 4.5 4.5L14.5 8" />
+                </svg>
+              </button>
+            </h2>
             <p>{{ texts.report.subtitle }}</p>
           </div>
           <span
@@ -394,6 +447,7 @@ const suppressedCrosses = computed(() =>
           </span>
         </header>
 
+        <div v-show="reportOpen" id="report-panel">
         <div v-if="reportLoading" class="ai-status">
           <p class="ai-status-title">{{ texts.report.loading }}</p>
           <p>{{ texts.report.loadingDetail }}</p>
@@ -408,9 +462,31 @@ const suppressedCrosses = computed(() =>
 
         <template v-else-if="report">
           <div class="ai-report-body">
-            <section class="ai-block" :aria-label="texts.report.observations">
-              <h3>{{ texts.report.observations }}</h3>
-              <ul class="ai-list">
+            <section class="ai-block">
+              <h3>
+                <button
+                  type="button"
+                  class="disclosure block-disclosure"
+                  :aria-expanded="observationsOpen"
+                  aria-controls="report-observations"
+                  @click="observationsOpen = !observationsOpen"
+                >
+                  <span>{{ texts.report.observations }}</span>
+                  <svg
+                    class="chevron"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m5.5 8 4.5 4.5L14.5 8" />
+                  </svg>
+                </button>
+              </h3>
+              <ul v-show="observationsOpen" id="report-observations" class="ai-list">
                 <li v-for="o in report.observaciones" :key="o.titulo">
                   <p class="ai-item-title">{{ o.titulo }}</p>
                   <p class="ai-item-text">{{ o.detalle }}</p>
@@ -418,9 +494,31 @@ const suppressedCrosses = computed(() =>
               </ul>
             </section>
 
-            <section class="ai-block" :aria-label="texts.report.actions">
-              <h3>{{ texts.report.actions }}</h3>
-              <ul class="ai-list">
+            <section class="ai-block">
+              <h3>
+                <button
+                  type="button"
+                  class="disclosure block-disclosure"
+                  :aria-expanded="actionsOpen"
+                  aria-controls="report-actions"
+                  @click="actionsOpen = !actionsOpen"
+                >
+                  <span>{{ texts.report.actions }}</span>
+                  <svg
+                    class="chevron"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m5.5 8 4.5 4.5L14.5 8" />
+                  </svg>
+                </button>
+              </h3>
+              <ul v-show="actionsOpen" id="report-actions" class="ai-list">
                 <li v-for="a in report.afrontamiento" :key="a.titulo">
                   <p class="ai-item-title">{{ a.titulo }}</p>
                   <p class="ai-item-text">{{ a.detalle }}</p>
@@ -449,6 +547,7 @@ const suppressedCrosses = computed(() =>
             <p>{{ texts.report.disclaimer }}</p>
           </footer>
         </template>
+        </div>
       </section>
 
       <div class="report-layout">

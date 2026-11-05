@@ -288,6 +288,48 @@ body {
   letter-spacing: -0.01em;
 }
 
+.disclosure {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.disclosure:hover {
+  color: var(--accent);
+}
+
+.ai-spark {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  color: var(--accent);
+}
+
+.chevron {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--muted);
+  transition: transform 160ms ease;
+}
+
+.disclosure[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
 .ai-report-head p {
   margin: 4px 0 0;
   font-size: 14px;
@@ -356,6 +398,26 @@ body {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.block-disclosure {
+  width: 100%;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.block-disclosure:hover {
+  color: var(--accent);
+}
+
+.block-disclosure .chevron {
+  width: 16px;
+  height: 16px;
 }
 
 .ai-list {
@@ -1581,6 +1643,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .row-fill,
   .row-dot,
+  .chevron,
   .button,
   .option,
   .dimension-chip {
