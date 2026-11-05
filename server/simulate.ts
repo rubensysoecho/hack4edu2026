@@ -2,7 +2,7 @@
  * Generador de respuestas sintéticas para la demo.
  *
  * No es parte del producto: es el "modo demo" que permite enseñar el flujo
- * sin 300 personas contestando.
+ * sin 800 personas contestando.
  *
  * No planta brechas. Cada persona tiene su propio nivel y cada respuesta
  * lleva su ruido. Si un grupo sale distinto, es variación de muestreo.
@@ -12,17 +12,13 @@ import { db, deleteResponses, saveResponse } from "./db.ts";
 
 /** Nivel medio de barrera por dimensión, 0-100. */
 const BASE_LEVEL: Record<string, number> = {
-  conectividad: 32,
+  expectativas_genero: 38,
+  tiempo_edad: 33,
   dispositivos: 38,
-  visual: 22,
-  auditiva: 18,
-  motriz: 15,
-  habla: 12,
-  salud: 25,
-  tdah: 33,
-  tea: 26,
-  dislexia: 28,
-  discalculia: 30,
+  conectividad: 32,
+  lengua_comprension: 28,
+  accesibilidad: 24,
+  entorno_desplazamiento: 30,
 };
 
 const DEFAULT_BASE_LEVEL = 35;
@@ -30,22 +26,29 @@ const DEFAULT_BASE_LEVEL = 35;
 /** Cómo se reparten los valores de cada eje. */
 const DISTRIBUTION: Record<string, { value: string; p: number }[]> = {
   genero: [
-    { value: "mujer", p: 0.5 },
-    { value: "hombre", p: 0.5 },
+    { value: "mujer", p: 0.47 },
+    { value: "hombre", p: 0.45 },
+    { value: "otra", p: 0.02 },
+    { value: "prefiero_no_responder", p: 0.06 },
   ],
   edad: [
-    { value: "12-14", p: 1 / 3 },
-    { value: "15-16", p: 1 / 3 },
-    { value: "17-18", p: 1 / 3 },
+    { value: "menos_18", p: 0.22 },
+    { value: "18-34", p: 0.38 },
+    { value: "35-54", p: 0.3 },
+    { value: "55_mas", p: 0.07 },
+    { value: "prefiero_no_responder", p: 0.03 },
   ],
   idioma: [
-    { value: "igual", p: 0.85 },
-    { value: "distinta", p: 0.15 },
+    { value: "nativo", p: 0.58 },
+    { value: "fluido", p: 0.3 },
+    { value: "basico", p: 0.09 },
+    { value: "prefiero_no_responder", p: 0.03 },
   ],
   ubicacion: [
-    { value: "urbana", p: 0.6 },
-    { value: "periurbana", p: 0.25 },
     { value: "rural", p: 0.15 },
+    { value: "urbana", p: 0.55 },
+    { value: "periferia", p: 0.28 },
+    { value: "prefiero_no_responder", p: 0.02 },
   ],
 };
 
@@ -90,7 +93,7 @@ function valueForTarget(target: number, rng: () => number): number {
  */
 export function simulateResponses(
   instrumentId: string,
-  count = 300,
+  count = 800,
 ): number {
   const questions = db
     .query(

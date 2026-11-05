@@ -4,11 +4,11 @@
  *   bun run seed
  *
  * Crea el instrumento de ejemplo con todas las dimensiones y ejes,
- * y lo rellena con 300 respuestas simuladas. No planta brechas:
+ * y lo rellena con 800 respuestas simuladas. No planta brechas:
  * cualquier diferencia entre grupos es variación de muestreo.
  */
 
-import { AXES, DIMENSIONS } from "./server/catalog.ts";
+import { AXES, DIMENSIONS, NON_COMPARISON_VALUES } from "./server/catalog.ts";
 import { calcGaps } from "./server/gaps.ts";
 import {
   db,
@@ -20,7 +20,7 @@ import {
 import { simulateResponses } from "./server/simulate.ts";
 
 const INSTRUMENT_ID = "demo";
-const RESPONSE_COUNT = 300;
+const RESPONSE_COUNT = 800;
 
 deleteAll();
 
@@ -48,22 +48,38 @@ DIMENSIONS.flatMap((d) => d.questions).forEach((q, position) => {
 
 const created = simulateResponses(INSTRUMENT_ID, RESPONSE_COUNT);
 
-const result = calcGaps(loadInput(INSTRUMENT_ID), { k: 10 });
+const result = calcGaps(loadInput(INSTRUMENT_ID), {
+  k: 10,
+  kCross: 20,
+  depth: 2,
+  excludedValues: NON_COMPARISON_VALUES,
+});
 
 console.log(`\n${created} respuestas sembradas.\n`);
-console.log("dimension       n       indice");
+console.log(`${"dimension".padEnd(26)}${"n".padEnd(8)}indice`);
 for (const d of result.dimensions) {
-  console.log(`${d.dimension.padEnd(16)}${String(d.n).padEnd(8)}${d.index}`);
+  console.log(`${d.dimension.padEnd(26)}${String(d.n).padEnd(8)}${d.index}`);
 }
 
 console.log("\nBrechas de dispositivos:");
-for (const g of result.groups) {
-  const gap = g.gaps.dispositivos;
-  const text =
-    g.suppressed || gap === null || gap === undefined
-      ? "grupo pequeño"
-      : `${gap >= 0 ? "+" : ""}${gap}`;
-  console.log(`${g.label.padEnd(36)} n=${String(g.n).padEnd(4)} ${text}`);
+const axisTables = result.tables.filter((table) => table.axes.length === 1);
+
+for (const table of axisTables) {
+  if (table.suppressed) {
+    console.log(
+      `${table.axes.join("+").padEnd(36)} no publicable: alguna celda tiene menos de k personas`,
+    );
+    continue;
+  }
+
+  for (const g of table.groups) {
+    const gap = g.gaps.dispositivos;
+    const text =
+      gap === null || gap === undefined
+        ? "—"
+        : `${gap >= 0 ? "+" : ""}${gap}`;
+    console.log(`${g.label.padEnd(36)} n=${String(g.n).padEnd(4)} ${text}`);
+  }
 }
 
 db.close();

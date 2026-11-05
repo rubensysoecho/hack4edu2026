@@ -14,12 +14,12 @@ que funcione el día del pitch queda fuera hasta que la demo funcione.
 
 | Término | Significado |
 | --- | --- |
-| **Dimensión** | Lo que se mide: `conectividad`, `dispositivos`, `barreras`, `apoyo`. En código, `dimension`. |
+| **Dimensión** | Lo que se mide: `expectativas_genero`, `tiempo_edad`, `dispositivos`, `conectividad`, `lengua_comprension`, `accesibilidad`, `entorno_desplazamiento`. En código, `dimension`. |
 | **Eje de corte** | Con quién se compara: `genero`, `edad`, `idioma`, `ubicacion`. En código, `axis`. |
 | **Índice** | Media ponderada de los ítems de una dimensión, normalizada **0–100**. En código, `index`. |
 | **Brecha** | `índice del grupo − índice global`, en puntos. Puede ser negativa. En código, `gap`. |
 | **Interseccional** | Brecha de un grupo definido por **dos o más ejes** a la vez. Es la que los promedios esconden. |
-| **k** | Umbral mínimo de grupo para publicar un dato. Por defecto **10**. |
+| **k** | Umbral mínimo de grupo para publicar un dato. Por defecto **10**; en cruces, **20**. |
 
 ## Catálogo: dimensiones y ejes
 
@@ -30,44 +30,48 @@ traducen nunca. Los símbolos y campos que los envuelven sí van en inglés.
 
 ### Dimensiones (lo que se mide)
 
-Cada subtipo es una dimensión propia: tiene su índice y se puede decir
-"visual: 35 de barrera" en vez de un promedio que mezcla cosas distintas.
-Los grupos `acceso`, `barreras` y `apoyo` solo ordenan la navegación: no se
-calculan.
+Cada sección del instrumento es una dimensión con su índice propio.
+Los grupos `acceso`, `barreras` y `contexto` solo ordenan la navegación: no se
+calculan. El equipo pedagógico puede dividir una sección en subtipos si detecta
+constructos distintos.
 
 | id | Grupo | Nombre | Qué mide |
 | --- | --- | --- | --- |
-| `conectividad` | acceso | Conectividad | Si la conexión alcanza para seguir las clases. |
-| `dispositivos` | acceso | Dispositivos | Con qué equipo estudia y cuánto puede usarlo. |
-| `visual` | barreras | Visual | Barrera declarada para ver la pizarra o la pantalla. |
-| `auditiva` | barreras | Auditiva | Barrera declarada para oír lo que se dice en clase. |
-| `motriz` | barreras | Motriz | Barrera declarada para desplazarse o usar el equipo. |
-| `habla` | barreras | Habla | Barrera declarada para expresarse hablando. |
-| `salud` | barreras | Salud crónica | Condición de salud que condiciona la asistencia. |
-| `tdah` | apoyo | Señales TDAH | Señales de atención, no diagnóstico. |
-| `tea` | apoyo | Señales TEA | Señales de comunicación social, no diagnóstico. |
-| `dislexia` | apoyo | Señales dislexia | Señales de lectura, no diagnóstico. |
-| `discalculia` | apoyo | Señales discalculia | Señales de cálculo, no diagnóstico. |
+| `expectativas_genero` | contexto | Expectativas y cuidados | Expectativas, cuidados y normas que condicionan la participación digital. |
+| `tiempo_edad` | contexto | Tiempo y etapa vital | Obligaciones y percepciones ligadas a la etapa vital. |
+| `dispositivos` | acceso | Dispositivos | Equipo, estado y disponibilidad para seguir las actividades. |
+| `conectividad` | acceso | Conectividad | Cortes, datos, suministro y saturación de la red. |
+| `lengua_comprension` | contexto | Lengua y comprensión | Dominio del idioma y comprensión de los mensajes. |
+| `accesibilidad` | barreras | Accesibilidad | Barreras visuales, auditivas, motrices y de atención. |
+| `entorno_desplazamiento` | contexto | Entorno y desplazamiento | Desplazamiento, espacio, apoyo técnico y horarios. |
 
-`barreras` = discapacidades de **nivel 1: identificables**.
-`apoyo` = discapacidades de **nivel 2: por diagnóstico declarado**, medidas como
-señales.
+`acceso` agrupa dispositivos y conectividad.
+`barreras` agrupa accesibilidad.
+`contexto` agrupa expectativas de género, tiempo, lengua y entorno.
 
 ### Ejes (con quién se compara)
 
 | id | Nombre | Valores |
 | --- | --- | --- |
-| `genero` | Género | mujer · hombre |
-| `edad` | Edad | tramos que define el centro |
-| `idioma` | Idioma | igual al de clase · distinto al de clase |
-| `ubicacion` | Ubicación | urbana · periurbana · rural |
+| `genero` | Género | mujer · hombre · otra · prefiero no responder |
+| `edad` | Edad | menos de 18 · 18-34 · 35-54 · 55 o más · prefiero no responder |
+| `ubicacion` | Ubicación | rural · urbana · periferia · prefiero no responder |
+| `idioma` | Idioma | nativo · fluido · básico · prefiero no responder |
 
-El eje `idioma` mide **distancia**, no una lengua concreta: la barrera es que la
-lengua de casa no sea la de las clases. Así vale en cualquier país.
+`otra` y `prefiero_no_responder` son valores **no comparables**: se cuentan como
+sin dato y no producen grupo ni índice. El motor los excluye con
+`NON_COMPARISON_VALUES`.
 
-**No se cruzan ejes.** El panel muestra un eje a la vez: dentro de un eje ves sus
-valores, y nunca "mujeres de zona rural". El motor sabe hacerlo (`profundidad: 2`),
-pero no se usa ni se expone. Se decide más adelante, con datos reales.
+El eje `idioma` mide **dominio declarado** del idioma principal de la organización,
+no una lengua concreta.
+
+**Se cruzan pares de ejes.** El panel muestra cada eje por separado y, debajo,
+los cruces de dos ejes (`depth: 2`): «género × edad», «género × ubicación», etc.
+Nunca se cruzan tres o más ejes.
+
+Cada tabla —un eje o un cruce— se publica **entera o no se publica**: si una
+sola celda tiene `n < k`, se oculta la tabla completa. Para cruces,
+`kCross = 20`. Así no se puede despejar la celda pequeña a partir de las demás.
 
 ### Redacción de preguntas
 
@@ -85,14 +89,15 @@ validación, todos valen **1**.
 
 1. **Nunca se perfila a un individuo.** La UI solo muestra agregados. No existe
    pantalla de "ficha del alumno" y no se debe construir.
-2. **Supresión por umbral.** Todo grupo con `n < k` no publica índice ni brecha.
-   No se muestra "oculto": se muestra "grupo demasiado pequeño para publicar".
+2. **Supresión por umbral y por tabla.** Si una celda de una tabla tiene `n < k`,
+   no se publica **ninguna** celda de esa tabla. No se muestra "oculto": se
+   muestra "no publicable: hay grupos demasiado pequeños".
 3. **Vocabulario.** No se usa la palabra "discriminación". Se dice
    **"barrera declarada"** o **"brecha de acceso"**. El dato es un autoinforme,
    no una acusación. Un 60% no prueba discriminación: solo un contraste entre
    grupos lo hace.
-4. **Sin diagnósticos.** TDAH, TEA, dislexia y discalculia se miden como
-   *señales de necesidad de apoyo*, nunca como diagnóstico clínico.
+4. **Sin diagnósticos.** Las preguntas de accesibilidad se miden como
+   *barreras declaradas*, nunca como diagnóstico clínico.
 5. **Cero preguntas abiertas** en el MVP: riesgo de reidentificación y de PII.
 
 ## Nomenclatura
@@ -128,7 +133,7 @@ Reglas:
 Los datos NUNCA los produce la IA.
 
 - **Programático** (SQL + TypeScript): índices 0–100 por dimensión, brechas,
-  índice global, supresión de celdas con `n < k`. Determinista, testeado, auditable.
+  índice global, supresión de tablas con celdas `n < k`. Determinista, testeado, auditable.
 - **IA** (OpenRouter, solo OpenRouter): recibe ese JSON ya calculado y escribe
   conclusiones en lenguaje llano — resumen, prioridades, recomendaciones, advertencias.
   No calcula, no estima, no inventa cifras.
@@ -211,8 +216,9 @@ pesos de los ítems respondidos. Si no respondió ninguno, no cuenta para esa di
 
 Los símbolos, tipos y campos internos van en inglés. El JSON que devuelve el modelo
 conserva las claves en español que fija el system prompt: `ai.ts` traduce en el borde
-(`Report` ↔ JSON del modelo). Entrada: los índices y brechas ya calculados. Salida
-validada con Zod:
+(`Report` ↔ JSON del modelo). El payload solo lleva tablas publicadas y valores
+comparables: ni celdas suprimidas, ni `prefiero_no_responder`, ni el nombre del
+centro. Entrada: los índices y brechas ya calculados. Salida validada con Zod:
 
 ```json
 {

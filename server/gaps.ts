@@ -9,8 +9,9 @@
  *   brecha  = índice del grupo − índice global
  *   aporte  = Σ(valor×peso del ítem) / Σ(valor×peso de la dimensión)
  *
- * Ningún dato con n < k sale publicado: se marca `suppressed` y los índices
- * quedan en `null`, no en cero.
+ * Supresión por tabla: si una celda de la tabla (un eje o un cruce de dos
+ * ejes) tiene n < k, no se publica NINGUNA celda de esa tabla. Así no se
+ * puede despejar la celda pequeña a partir de las demás.
  */
 
 const SCALE_MIN = 1;
@@ -37,10 +38,14 @@ export type EngineInput = {
 };
 
 export type Options = {
-  /** Umbral mínimo de grupo para publicar un dato. Por defecto 10. */
+  /** Umbral mínimo de celda para un eje. Por defecto 10. */
   k?: number;
-  /** 1 = un eje por grupo. 2 = también pares de ejes (interseccional). Por defecto 1. */
+  /** Umbral mínimo de celda para un cruce de dos ejes. Por defecto 20. */
+  kCross?: number;
+  /** 1 = un eje por tabla. 2 = también pares de ejes. Por defecto 1. */
   depth?: 1 | 2;
+  /** Valores que no se comparan (ej. "prefiero_no_responder"). */
+  excludedValues?: readonly string[];
 };
 
 export type Contribution = {
@@ -59,10 +64,11 @@ export type DimensionSummary = {
 };
 
 export type GroupGap = {
-  /** Ej: "genero=mujer" o "genero=mujer + ubicacion=rural" */
+  /** Ej: "genero=mujer" o "genero=mujer + edad=18-34" */
   label: string;
   axes: Record<string, string>;
-  n: number;
+  /** null si la tabla está suprimida */
+  n: number | null;
   suppressed: boolean;
   /** dimension → índice 0..100, o null si suprimido */
   indices: Record<string, number | null>;
@@ -70,10 +76,20 @@ export type GroupGap = {
   gaps: Record<string, number | null>;
 };
 
+export type GapTable = {
+  /** ["genero"] para un eje, ["edad", "genero"] para un cruce */
+  axes: string[];
+  groups: GroupGap[];
+  /** true si alguna celda de la tabla tiene n < umbral */
+  suppressed: boolean;
+  /** Respuestas sin dato para todos los ejes de la tabla */
+  excluded: number;
+};
+
 export type GapResult = {
   total: number;
   dimensions: DimensionSummary[];
-  groups: GroupGap[];
+  tables: GapTable[];
 };
 
 const roundTo = (n: number): number => Math.round(n * ROUNDING) / ROUNDING;
@@ -158,15 +174,17 @@ type GroupKey = {
   axes: Record<string, string>;
 };
 
-/** Genera las combinaciones de ejes a partir de los atributos presentes. */
+/** Genera las combinaciones de ejes a partir de los atributos comparables. */
 function buildGroupKeys(
   responses: ResponseRecord[],
   depth: 1 | 2,
+  excludedValues: Set<string>,
 ): GroupKey[] {
   const valuesByAxis = new Map<string, Set<string>>();
 
   for (const response of responses) {
     for (const [axis, value] of Object.entries(response.attributes)) {
+      if (excludedValues.has(value)) continue;
       const set = valuesByAxis.get(axis);
       if (set) set.add(value);
       else valuesByAxis.set(axis, new Set([value]));
@@ -208,7 +226,9 @@ function buildGroupKeys(
 
 export function calcGaps(input: EngineInput, options: Options = {}): GapResult {
   const k = options.k ?? 10;
+  const kCross = options.kCross ?? 20;
   const depth = options.depth ?? 1;
+  const excludedValues = new Set(options.excludedValues ?? []);
 
   const { items, responses } = input;
   validateItems(items);
@@ -249,47 +269,80 @@ export function calcGaps(input: EngineInput, options: Options = {}): GapResult {
     });
   }
 
-  // Agregado por grupo de corte.
-  const groups: GroupGap[] = [];
+  // Agrupa las claves por conjunto de ejes: cada conjunto es una tabla.
+  const keysByAxes = new Map<string, GroupKey[]>();
+  for (const key of buildGroupKeys(responses, depth, excludedValues)) {
+    const axes = Object.keys(key.axes).sort();
+    const id = axes.join("+");
+    const list = keysByAxes.get(id);
+    if (list) list.push(key);
+    else keysByAxes.set(id, [key]);
+  }
 
-  for (const key of buildGroupKeys(responses, depth)) {
-    const members = responses.filter((response) =>
-      Object.entries(key.axes).every(
-        ([axis, value]) => response.attributes[axis] === value,
+  const tables: GapTable[] = [];
+
+  for (const [id, tableKeys] of keysByAxes) {
+    const axes = id.split("+");
+    const threshold = axes.length > 1 ? kCross : k;
+
+    const cells = tableKeys.map((key) => ({
+      key,
+      members: responses.filter((response) =>
+        Object.entries(key.axes).every(
+          ([axis, value]) => response.attributes[axis] === value,
+        ),
       ),
-    );
+    }));
 
-    const n = members.length;
-    const suppressed = n < k;
-    const groupIndices: Record<string, number | null> = {};
-    const gaps: Record<string, number | null> = {};
+    const suppressed = cells.some(({ members }) => members.length < threshold);
 
-    for (const dimension of dimensions) {
-      const values = members
-        .map((response) => indices.get(response.id)?.[dimension])
-        .filter((v): v is number => typeof v === "number");
+    const groups: GroupGap[] = cells.map(({ key, members }) => {
+      const n = members.length;
+      const groupIndices: Record<string, number | null> = {};
+      const gaps: Record<string, number | null> = {};
 
-      const index =
-        !suppressed && values.length >= k
-          ? roundTo(values.reduce((a, b) => a + b, 0) / values.length)
-          : null;
+      for (const dimension of dimensions) {
+        const values = members
+          .map((response) => indices.get(response.id)?.[dimension])
+          .filter((v): v is number => typeof v === "number");
 
-      const global = globals[dimension] ?? null;
+        const index =
+          !suppressed && values.length >= threshold
+            ? roundTo(values.reduce((a, b) => a + b, 0) / values.length)
+            : null;
 
-      groupIndices[dimension] = index;
-      gaps[dimension] =
-        index !== null && global !== null ? roundTo(index - global) : null;
-    }
+        const global = globals[dimension] ?? null;
 
-    groups.push({
-      label: key.label,
-      axes: key.axes,
-      n,
+        groupIndices[dimension] = index;
+        gaps[dimension] =
+          index !== null && global !== null ? roundTo(index - global) : null;
+      }
+
+      return {
+        label: key.label,
+        axes: key.axes,
+        n: suppressed ? null : n,
+        suppressed,
+        indices: groupIndices,
+        gaps,
+      };
+    });
+
+    const counted = cells.reduce((sum, { members }) => sum + members.length, 0);
+
+    tables.push({
+      axes,
+      groups,
       suppressed,
-      indices: groupIndices,
-      gaps,
+      excluded: responses.length - counted,
     });
   }
 
-  return { total: responses.length, dimensions: summaries, groups };
+  tables.sort(
+    (a, b) =>
+      a.axes.length - b.axes.length ||
+      a.axes.join("+").localeCompare(b.axes.join("+")),
+  );
+
+  return { total: responses.length, dimensions: summaries, tables };
 }

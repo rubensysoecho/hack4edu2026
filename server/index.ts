@@ -13,6 +13,7 @@ import {
   DIMENSION_GROUPS,
   DIMENSIONS,
   groupOf,
+  NON_COMPARISON_VALUES,
   questionsOf,
 } from "./catalog.ts";
 import { calcGaps } from "./gaps.ts";
@@ -26,6 +27,8 @@ import {
 import { simulateResponses } from "./simulate.ts";
 
 const K = 10;
+const K_CROSS = 20;
+const DEPTH: 1 | 2 = 2;
 
 const app = new Hono();
 
@@ -105,7 +108,7 @@ app.post("/api/instruments/:id/simulate", (c) => {
   const instrument = currentInstrument(id);
   if (!instrument) return c.json({ error: "Instrumento no encontrado" }, 404);
 
-  const created = simulateResponses(instrument.id, 300);
+  const created = simulateResponses(instrument.id, 800);
   return c.json({ responses: created });
 });
 
@@ -115,7 +118,12 @@ app.get("/api/panel", (c) => {
     return c.json({ error: "No hay instrumentos. Ejecuta `bun run seed`." }, 404);
   }
 
-  const result = calcGaps(loadInput(instrument.id), { k: K });
+  const result = calcGaps(loadInput(instrument.id), {
+    k: K,
+    kCross: K_CROSS,
+    depth: DEPTH,
+    excludedValues: NON_COMPARISON_VALUES,
+  });
 
   // El grupo de navegación no se calcula: sale del catálogo.
   const dimensions = result.dimensions.map((d) => ({
@@ -123,7 +131,18 @@ app.get("/api/panel", (c) => {
     group: groupOf(d.dimension),
   }));
 
-  return c.json({ instrument, k: K, ...result, dimensions });
+  const axisValues = Object.fromEntries(
+    AXES.map((axis) => [axis.id, axis.values]),
+  );
+
+  return c.json({
+    instrument,
+    k: K,
+    kCross: K_CROSS,
+    axisValues,
+    ...result,
+    dimensions,
+  });
 });
 
 app.use("/*", serveStatic({ root: "./dist" }));

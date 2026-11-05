@@ -34,7 +34,18 @@ export const texts = {
     groupsLabel: "grupos publicados",
     largestGap: "brecha mayor",
     summary: "Resumen del conjunto",
-    suppressed: "Grupo pequeño",
+    suppressedTable: (k: number) =>
+      `No publicable: hay grupos con menos de ${k} personas.`,
+    crosses: "Cruces",
+    crossNote: (k: number) =>
+      `Solo se publican cruces con ${k} personas o más en cada celda.`,
+    crossGap: (dimension: string) => `Brecha en ${dimension}`,
+    crossSuppressed: "Cruces no publicables",
+    smallCell: (k: number) => `alguna celda tiene menos de ${k} personas`,
+    excluded: (n: number) =>
+      n === 1
+        ? "1 persona sin dato en esta tabla"
+        : `${n} personas sin dato en esta tabla`,
     noData: "Sin respuestas todavía",
     noDataDetail:
       "Comparte el formulario o usa el modo demo para simular respuestas.",
@@ -74,47 +85,50 @@ export const texts = {
   },
 
   dimensions: {
-    conectividad: "Conectividad",
+    expectativas_genero: "Expectativas y cuidados",
+    tiempo_edad: "Tiempo y etapa vital",
     dispositivos: "Dispositivos",
-    visual: "Visual",
-    auditiva: "Auditiva",
-    motriz: "Motriz",
-    habla: "Habla",
-    salud: "Salud crónica",
-    tdah: "Señales TDAH",
-    tea: "Señales TEA",
-    dislexia: "Señales dislexia",
-    discalculia: "Señales discalculia",
+    conectividad: "Conectividad",
+    lengua_comprension: "Lengua y comprensión",
+    accesibilidad: "Accesibilidad",
+    entorno_desplazamiento: "Entorno y desplazamiento",
   } as Record<string, string>,
 
   groups: {
     acceso: "Acceso digital",
     barreras: "Barreras de acceso",
-    apoyo: "Necesidades de apoyo",
+    contexto: "Contexto y participación",
   } as Record<string, string>,
 
-  groupOrder: ["acceso", "barreras", "apoyo"],
+  groupOrder: ["acceso", "barreras", "contexto"],
 
   axes: {
     genero: "Género",
     edad: "Edad",
-    idioma: "Idioma",
     ubicacion: "Ubicación",
+    idioma: "Idioma",
   } as Record<string, string>,
 
-  axisOrder: ["genero", "edad", "idioma", "ubicacion"],
+  axisOrder: ["genero", "edad", "ubicacion", "idioma"],
 
   labels: {
     "genero=mujer": "Mujeres",
     "genero=hombre": "Hombres",
-    "edad=12-14": "De 12 a 14 años",
-    "edad=15-16": "De 15 a 16 años",
-    "edad=17-18": "De 17 a 18 años",
-    "idioma=igual": "Idioma igual al de clase",
-    "idioma=distinta": "Idioma distinto al de clase",
-    "ubicacion=urbana": "Zona urbana",
-    "ubicacion=periurbana": "Zona periurbana",
+    "genero=otra": "Otra identidad",
+    "genero=prefiero_no_responder": "Prefiero no responder",
+    "edad=menos_18": "Menos de 18 años",
+    "edad=18-34": "Entre 18 y 34 años",
+    "edad=35-54": "De 35 a 54 años",
+    "edad=55_mas": "55 años o más",
+    "edad=prefiero_no_responder": "Prefiero no responder",
+    "idioma=nativo": "Nativo",
+    "idioma=fluido": "Fluido",
+    "idioma=basico": "Básico",
+    "idioma=prefiero_no_responder": "Prefiero no responder",
     "ubicacion=rural": "Zona rural",
+    "ubicacion=urbana": "Zona urbana",
+    "ubicacion=periferia": "Periferia",
+    "ubicacion=prefiero_no_responder": "Prefiero no responder",
   } as Record<string, string>,
 
   nullGap: "—",
