@@ -330,10 +330,10 @@ const suppressedCrosses = computed(() =>
       <p>{{ texts.panel.noDataDetail }}</p>
     </section>
 
-    <template v-else-if="panel">
-      <section class="diagnostic-panel" :aria-label="texts.panel.dimensionsTitle">
-        <div class="diagnostic-heading">
-          <div>
+    <div v-else-if="panel" class="report-layout">
+      <aside class="report-rail" :aria-label="texts.panel.dimensionsTitle">
+        <div class="rail-panel">
+          <div class="rail-heading">
             <h2>{{ texts.panel.dimensionsTitle }}</h2>
             <p>{{ texts.panel.dimensionsNote }}</p>
           </div>
@@ -342,222 +342,226 @@ const suppressedCrosses = computed(() =>
             <input v-model="relevantOnly" type="checkbox" />
             <span>{{ texts.panel.relevantOnly(formatNumber(RELEVANT_GAP)) }}</span>
           </label>
-        </div>
 
-        <div
-          v-for="b in dimensionBlocks"
-          :key="b.group"
-          class="dimension-group"
-          role="group"
-          :aria-label="b.name"
-        >
-          <p class="dimension-group-title">
-            <span class="group-mark" aria-hidden="true"></span>
-            {{ b.name }}
-          </p>
-
-          <div class="dimension-chips">
-            <button
-              v-for="d in b.dimensions"
-              :key="d.dimension"
-              type="button"
-              class="dimension-chip"
-              :class="{
-                active: d.dimension === selectedDimension,
-                empty: d.index === null,
-              }"
-              :aria-pressed="d.dimension === selectedDimension"
-              @click="selectedDimension = d.dimension"
-            >
-              <span v-if="d.dimension === selectedDimension" aria-hidden="true">✓</span>
-              <span>{{ dimensionName(d.dimension) }}</span>
-              <strong>{{ formatNumber(d.index) }}</strong>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="distribution-section" :aria-label="texts.panel.distributions">
-        <div class="distribution-heading">
-          <h2>{{ texts.panel.distributions }}</h2>
-          <p>{{ texts.panel.distributionNote(dimensionName(selectedDimension)) }}</p>
-        </div>
-
-        <div class="axes">
-          <article
-            v-for="b in axisBlocks"
-            :key="b.axis"
-            class="axis-card"
+          <div
+            v-for="b in dimensionBlocks"
+            :key="b.group"
+            class="dimension-group"
+            role="group"
             :aria-label="b.name"
           >
-            <header class="axis-card-header">
-              <div>
-                <p>{{ texts.panel.dimensionLabel(dimensionName(selectedDimension)) }}</p>
-                <h3>{{ texts.panel.distributionBy(b.name) }}</h3>
-              </div>
-              <span v-if="!b.table.suppressed" class="axis-total">
-                {{ texts.panel.total(tableTotal(b.table)) }}
-              </span>
-            </header>
-
-            <div v-if="!b.table.suppressed" class="axis-scale" aria-hidden="true">
-              <span>−{{ formatNumber(scaleLimit) }} {{ texts.panel.lessBarrier }}</span>
-              <strong>0,0 {{ texts.panel.average }}</strong>
-              <span>+{{ formatNumber(scaleLimit) }} {{ texts.panel.moreBarrier }}</span>
-            </div>
-
-            <p v-if="b.table.suppressed" class="block-notice axis-notice">
-              {{ texts.panel.suppressedTable(panel.k) }}
+            <p class="dimension-group-title">
+              <span class="group-mark" aria-hidden="true"></span>
+              {{ b.name }}
             </p>
 
-            <ul v-else class="distribution-rows">
-              <li v-for="g in visibleGroups(b.table)" :key="g.label" class="distribution-row">
-                <div class="distribution-meta">
-                  <span class="row-name">{{ label(g.label) }}</span>
-                  <span class="row-n">
-                    {{ texts.panel.people(g.n ?? 0) }}
-                    <span v-if="groupPercentage(b.table, g)">({{ groupPercentage(b.table, g) }})</span>
-                  </span>
-                  <span class="row-value" :class="gapClass(g.gaps[selectedDimension] ?? null)">
-                    <span class="row-direction">
-                      {{ (g.gaps[selectedDimension] ?? 0) > 0 ? texts.panel.moreBarrier : (g.gaps[selectedDimension] ?? 0) < 0 ? texts.panel.lessBarrier : texts.panel.average }}
-                    </span>
-                    {{ formatNumber(g.gaps[selectedDimension] ?? null, true) }}
-                  </span>
-                </div>
+            <div class="dimension-chips">
+              <button
+                v-for="d in b.dimensions"
+                :key="d.dimension"
+                type="button"
+                class="dimension-chip"
+                :class="{
+                  active: d.dimension === selectedDimension,
+                  empty: d.index === null,
+                }"
+                :aria-pressed="d.dimension === selectedDimension"
+                @click="selectedDimension = d.dimension"
+              >
+                <span class="chip-name">
+                  <span v-if="d.dimension === selectedDimension" aria-hidden="true">✓</span>
+                  {{ dimensionName(d.dimension) }}
+                </span>
+                <strong>{{ formatNumber(d.index) }}</strong>
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
 
-                <span class="row-bar" aria-hidden="true">
-                  <span class="row-zero"></span>
-                  <span
-                    class="row-fill"
-                    :class="gapClass(g.gaps[selectedDimension] ?? null)"
-                    :style="{
-                      width: barWidth(g.gaps[selectedDimension] ?? null) + '%',
-                      left: (g.gaps[selectedDimension] ?? 0) >= 0
-                        ? '50%'
-                        : 50 - barWidth(g.gaps[selectedDimension] ?? null) + '%',
-                    }"
-                  ></span>
-                  <span
-                    class="row-dot"
-                    :class="gapClass(g.gaps[selectedDimension] ?? null)"
-                    :style="{
-                      left: 50 + ((g.gaps[selectedDimension] ?? 0) / scaleLimit) * 50 + '%',
-                    }"
-                  ></span>
+      <div class="report-main">
+        <section class="distribution-section" :aria-label="texts.panel.distributions">
+          <div class="distribution-heading">
+            <h2>{{ texts.panel.distributions }}</h2>
+            <p>{{ texts.panel.distributionNote(dimensionName(selectedDimension)) }}</p>
+          </div>
+
+          <div class="axes">
+            <article
+              v-for="b in axisBlocks"
+              :key="b.axis"
+              class="axis-card"
+              :aria-label="b.name"
+            >
+              <header class="axis-card-header">
+                <div>
+                  <p>{{ texts.panel.dimensionLabel(dimensionName(selectedDimension)) }}</p>
+                  <h3>{{ texts.panel.distributionBy(b.name) }}</h3>
+                </div>
+                <span v-if="!b.table.suppressed" class="axis-total">
+                  {{ texts.panel.total(tableTotal(b.table)) }}
+                </span>
+              </header>
+
+              <div v-if="!b.table.suppressed" class="axis-scale" aria-hidden="true">
+                <span>−{{ formatNumber(scaleLimit) }} {{ texts.panel.lessBarrier }}</span>
+                <strong>0,0 {{ texts.panel.average }}</strong>
+                <span>+{{ formatNumber(scaleLimit) }} {{ texts.panel.moreBarrier }}</span>
+              </div>
+
+              <p v-if="b.table.suppressed" class="block-notice axis-notice">
+                {{ texts.panel.suppressedTable(panel.k) }}
+              </p>
+
+              <ul v-else class="distribution-rows">
+                <li v-for="g in visibleGroups(b.table)" :key="g.label" class="distribution-row">
+                  <div class="distribution-meta">
+                    <span class="row-name">{{ label(g.label) }}</span>
+                    <span class="row-n">
+                      {{ texts.panel.people(g.n ?? 0) }}
+                      <span v-if="groupPercentage(b.table, g)">({{ groupPercentage(b.table, g) }})</span>
+                    </span>
+                    <span class="row-value" :class="gapClass(g.gaps[selectedDimension] ?? null)">
+                      <span class="row-direction">
+                        {{ (g.gaps[selectedDimension] ?? 0) > 0 ? texts.panel.moreBarrier : (g.gaps[selectedDimension] ?? 0) < 0 ? texts.panel.lessBarrier : texts.panel.average }}
+                      </span>
+                      {{ formatNumber(g.gaps[selectedDimension] ?? null, true) }}
+                    </span>
+                  </div>
+
+                  <span class="row-bar" aria-hidden="true">
+                    <span class="row-zero"></span>
+                    <span
+                      class="row-fill"
+                      :class="gapClass(g.gaps[selectedDimension] ?? null)"
+                      :style="{
+                        width: barWidth(g.gaps[selectedDimension] ?? null) + '%',
+                        left: (g.gaps[selectedDimension] ?? 0) >= 0
+                          ? '50%'
+                          : 50 - barWidth(g.gaps[selectedDimension] ?? null) + '%',
+                      }"
+                    ></span>
+                    <span
+                      class="row-dot"
+                      :class="gapClass(g.gaps[selectedDimension] ?? null)"
+                      :style="{
+                        left: 50 + ((g.gaps[selectedDimension] ?? 0) / scaleLimit) * 50 + '%',
+                      }"
+                    ></span>
+                  </span>
+                </li>
+              </ul>
+
+              <p
+                v-if="!b.table.suppressed && visibleGroups(b.table).length === 0"
+                class="no-relevant"
+              >
+                {{ texts.panel.noRelevant }}
+              </p>
+
+              <p v-if="b.table.excluded > 0" class="block-excluded axis-excluded">
+                {{ texts.panel.excluded(b.table.excluded) }}
+              </p>
+
+              <footer v-if="!b.table.suppressed" class="axis-summary">
+                <span aria-hidden="true">i</span>
+                <p>{{ axisSummary(b.table, b.axis) }}</p>
+              </footer>
+            </article>
+          </div>
+        </section>
+
+        <section
+          v-if="crossBlocks.length > 0"
+          class="crosses"
+          :aria-label="texts.panel.crosses"
+        >
+          <div class="crosses-header">
+            <h2 class="section-title">{{ texts.panel.crosses }}</h2>
+            <p class="cross-note">
+              {{ texts.panel.crossNote(panel.kCross) }}
+            </p>
+          </div>
+          <p class="cross-dimension">
+            {{ texts.panel.crossGap(dimensionName(selectedDimension)) }}
+          </p>
+
+          <div v-if="publishedCrosses.length > 0" class="cross-grid">
+            <article
+              v-for="b in publishedCrosses"
+              :key="b.key"
+              class="cross-block"
+            >
+              <h3 class="cross-title">{{ b.title }}</h3>
+
+              <div
+                class="cross-scroll"
+                role="region"
+                :aria-label="b.title"
+                tabindex="0"
+              >
+                <table class="cross-table">
+                  <caption class="sr-only">
+                    {{ b.title }}.
+                    {{ texts.panel.crossGap(dimensionName(selectedDimension)) }}.
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" class="cross-corner">
+                        {{ axisName(b.rowAxis) }}
+                      </th>
+                      <th v-for="col in b.cols" :key="col" scope="col">
+                        {{ valueLabel(b.colAxis, col) }}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="row in b.rows" :key="row">
+                      <th scope="row">{{ valueLabel(b.rowAxis, row) }}</th>
+                      <td
+                        v-for="col in b.cols"
+                        :key="col"
+                      >
+                        <span
+                          class="cross-gap"
+                          :class="gapClass(cell(b, row, col).gap)"
+                        >
+                          {{ formatNumber(cell(b, row, col).gap, true) }}
+                        </span>
+                        <span
+                          v-if="cell(b, row, col).n !== null"
+                          class="cross-n"
+                        >
+                          {{ cell(b, row, col).n }}<span class="sr-only">
+                            personas</span
+                          >
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <p v-if="b.table.excluded > 0" class="block-excluded">
+                {{ texts.panel.excluded(b.table.excluded) }}
+              </p>
+            </article>
+          </div>
+
+          <div v-if="suppressedCrosses.length > 0" class="cross-suppressed">
+            <h3>{{ texts.panel.crossSuppressed }}</h3>
+            <ul>
+              <li v-for="b in suppressedCrosses" :key="b.key">
+                <strong>{{ b.title }}</strong>
+                <span>{{ texts.panel.smallCell(panel.kCross) }}</span>
+                <span v-if="b.table.excluded > 0">
+                  {{ texts.panel.excluded(b.table.excluded) }}
                 </span>
               </li>
             </ul>
-
-            <p
-              v-if="!b.table.suppressed && visibleGroups(b.table).length === 0"
-              class="no-relevant"
-            >
-              {{ texts.panel.noRelevant }}
-            </p>
-
-            <p v-if="b.table.excluded > 0" class="block-excluded axis-excluded">
-              {{ texts.panel.excluded(b.table.excluded) }}
-            </p>
-
-            <footer v-if="!b.table.suppressed" class="axis-summary">
-              <span aria-hidden="true">i</span>
-              <p>{{ axisSummary(b.table, b.axis) }}</p>
-            </footer>
-          </article>
-        </div>
-      </section>
-
-      <section
-        v-if="crossBlocks.length > 0"
-        class="crosses"
-        :aria-label="texts.panel.crosses"
-      >
-        <div class="crosses-header">
-          <h2 class="section-title">{{ texts.panel.crosses }}</h2>
-          <p class="cross-note">
-            {{ texts.panel.crossNote(panel.kCross) }}
-          </p>
-        </div>
-        <p class="cross-dimension">
-          {{ texts.panel.crossGap(dimensionName(selectedDimension)) }}
-        </p>
-
-        <div v-if="publishedCrosses.length > 0" class="cross-grid">
-          <article
-            v-for="b in publishedCrosses"
-            :key="b.key"
-            class="cross-block"
-          >
-            <h3 class="cross-title">{{ b.title }}</h3>
-
-            <div
-              class="cross-scroll"
-              role="region"
-              :aria-label="b.title"
-              tabindex="0"
-            >
-              <table class="cross-table">
-                <caption class="sr-only">
-                  {{ b.title }}.
-                  {{ texts.panel.crossGap(dimensionName(selectedDimension)) }}.
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col" class="cross-corner">
-                      {{ axisName(b.rowAxis) }}
-                    </th>
-                    <th v-for="col in b.cols" :key="col" scope="col">
-                      {{ valueLabel(b.colAxis, col) }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in b.rows" :key="row">
-                    <th scope="row">{{ valueLabel(b.rowAxis, row) }}</th>
-                    <td
-                      v-for="col in b.cols"
-                      :key="col"
-                    >
-                      <span
-                        class="cross-gap"
-                        :class="gapClass(cell(b, row, col).gap)"
-                      >
-                        {{ formatNumber(cell(b, row, col).gap, true) }}
-                      </span>
-                      <span
-                        v-if="cell(b, row, col).n !== null"
-                        class="cross-n"
-                      >
-                        {{ cell(b, row, col).n }}<span class="sr-only">
-                          personas</span
-                        >
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p v-if="b.table.excluded > 0" class="block-excluded">
-              {{ texts.panel.excluded(b.table.excluded) }}
-            </p>
-          </article>
-        </div>
-
-        <div v-if="suppressedCrosses.length > 0" class="cross-suppressed">
-          <h3>{{ texts.panel.crossSuppressed }}</h3>
-          <ul>
-            <li v-for="b in suppressedCrosses" :key="b.key">
-              <strong>{{ b.title }}</strong>
-              <span>{{ texts.panel.smallCell(panel.kCross) }}</span>
-              <span v-if="b.table.excluded > 0">
-                {{ texts.panel.excluded(b.table.excluded) }}
-              </span>
-            </li>
-          </ul>
-        </div>
-      </section>
-    </template>
+          </div>
+        </section>
+      </div>
+    </div>
   </main>
 </template>
