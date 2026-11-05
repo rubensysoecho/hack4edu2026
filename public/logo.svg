@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <defs>
+    <mask id="muesca">
+      <rect width="32" height="32" fill="#fff" />
+      <circle cx="30" cy="30" r="10" fill="#000" />
+    </mask>
+  </defs>
+  <circle cx="16" cy="16" r="11.5" stroke="#1856C3" stroke-width="3" mask="url(#muesca)" />
+</svg>

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    // Google Forms API (crear/publicar formularios, gestionar preguntas, leer respuestas).
+    // No requiere credenciales al instalar: pide "connect Google Forms" para el flujo OAuth.
+    // Alternativa no interactiva: exportar GOOGLE_FORMS_CLIENT_ID, GOOGLE_FORMS_CLIENT_SECRET
+    // y GOOGLE_FORMS_REFRESH_TOKEN y añadirlos en "environment".
+    "google-forms": {
+      "type": "local",
+      "command": ["npx", "-y", "mcp-google-forms@latest"],
+      "enabled": true
+    }
+  }
+}
