@@ -25,15 +25,23 @@ export const texts = {
 
   panel: {
     title: "Brechas de acceso",
+    dimensionsTitle: "Dimensiones",
+    dimensionsNote: "Nivel global de cada dimensión, de 0 a 100.",
     subtitle:
       "Distancia de cada grupo al conjunto, en puntos sobre 100. Positivo significa más barrera. El número pequeño son las personas del grupo.",
     gap: "Brecha",
-    level: "nivel",
+    contextLine: (responses: number, axes: number) =>
+      `${responses} respuestas · ${axes} ${
+        axes === 1 ? "eje" : "ejes"
+      } de comparación`,
+    keyFinding: "Lo más importante",
+    heroGap: (gap: string, dimension: string) =>
+      `La brecha es de ${gap} puntos más de barrera que el conjunto en ${dimension}.`,
+    noPositiveGap:
+      "Ningún grupo declara más barrera que el conjunto en esta dimensión.",
+    scaleGlobal: "conjunto",
+    scaleGroup: "grupo",
     people: (n: number) => (n === 1 ? "1 persona" : `${n} personas`),
-    peopleLabel: "personas",
-    groupsLabel: "grupos publicados",
-    largestGap: "brecha mayor",
-    summary: "Resumen del conjunto",
     suppressedTable: (k: number) =>
       `No publicable: hay grupos con menos de ${k} personas.`,
     crosses: "Cruces",

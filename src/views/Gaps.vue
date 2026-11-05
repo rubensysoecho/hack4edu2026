@@ -53,6 +53,18 @@ type CrossBlock = {
   cells: Record<string, CrossCell>;
 };
 
+type GapCandidate = {
+  group: GroupGap;
+  table: GapTable;
+  gap: number | null;
+};
+
+type TopGap = {
+  group: GroupGap;
+  table: GapTable;
+  gap: number;
+};
+
 const panel = ref<Panel | null>(null);
 const loading = ref(true);
 const error = ref(false);
@@ -69,9 +81,7 @@ async function load() {
     const response = await fetch(`/api/panel${query}`);
     if (!response.ok) throw new Error(String(response.status));
     panel.value = (await response.json()) as Panel;
-    const withData = panel.value.dimensions.find((d) => d.n > 0);
-    selectedDimension.value =
-      (withData ?? panel.value.dimensions[0])?.dimension ?? "";
+    selectedDimension.value = bestDimension(panel.value);
   } catch {
     error.value = true;
   } finally {
@@ -81,6 +91,30 @@ async function load() {
 
 onMounted(load);
 watch(activeInstrument, load);
+
+/** Arranca en la dimensión con la brecha positiva más alta. */
+function bestDimension(current: Panel): string {
+  const withData = current.dimensions.filter((dimension) => dimension.n > 0);
+  if (withData.length === 0) return "";
+
+  const tables = current.tables.filter((table) => !table.suppressed);
+  let best = withData[0]!.dimension;
+  let bestGap = 0;
+
+  for (const dimension of withData) {
+    for (const table of tables) {
+      for (const group of table.groups) {
+        const gap = group.gaps[dimension.dimension] ?? null;
+        if (gap !== null && gap > bestGap) {
+          bestGap = gap;
+          best = dimension.dimension;
+        }
+      }
+    }
+  }
+
+  return best;
+}
 
 const dimensionName = (d: string) => texts.dimensions[d] ?? d;
 const groupName = (g: string) => texts.groups[g] ?? g;
@@ -123,20 +157,55 @@ const axisBlocks = computed(() =>
   })),
 );
 
-const published = computed(() =>
+const publishedGaps = computed<GapCandidate[]>(() =>
   [...singleTables.value, ...crossTables.value]
     .filter((table) => !table.suppressed)
-    .flatMap((table) => table.groups),
+    .flatMap((table) =>
+      table.groups.map((group) => ({
+        group,
+        table,
+        gap: group.gaps[selectedDimension.value] ?? null,
+      })),
+    ),
 );
 
-/** La brecha más alta de la dimensión abierta: el grupo que queda más atrás. */
-const largestGap = computed(() => {
-  const values = published.value
-    .map((g) => g.gaps[selectedDimension.value] ?? null)
-    .filter((v): v is number => v !== null);
+/** La brecha positiva más alta: el grupo que queda más atrás. */
+const topGap = computed<TopGap | null>(() => {
+  const candidates = publishedGaps.value.filter(
+    (candidate): candidate is TopGap =>
+      candidate.gap !== null && candidate.gap > 0,
+  );
 
-  if (values.length === 0) return null;
-  return values.reduce((a, b) => (b > a ? b : a));
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.gap > a.gap ? b : a));
+});
+
+const globalIndex = computed(
+  () =>
+    panel.value?.dimensions.find(
+      (dimension) => dimension.dimension === selectedDimension.value,
+    )?.index ?? null,
+);
+
+const heroGroupIndex = computed(() => {
+  const top = topGap.value;
+  if (!top) return null;
+  return (
+    top.group.indices[selectedDimension.value] ??
+    (globalIndex.value !== null ? globalIndex.value + top.gap : null)
+  );
+});
+
+const heroScale = computed(() => {
+  const global = globalIndex.value;
+  const group = heroGroupIndex.value;
+  if (global === null || group === null) return null;
+  return {
+    global,
+    group,
+    left: Math.min(global, group),
+    width: Math.abs(group - global),
+  };
 });
 
 const maxAbsGap = computed(() =>
@@ -192,6 +261,20 @@ function valuesFor(table: GapTable, axis: string): string[] {
 
 function crossTitle(table: GapTable): string {
   return table.axes.map((axis) => axisName(axis)).join(" × ");
+}
+
+function groupDisplayName(group: GroupGap): string {
+  return Object.entries(group.axes)
+    .sort(([a], [b]) => orderIndex(a) - orderIndex(b))
+    .map(([axis, value]) => valueLabel(axis, value))
+    .join(" · ");
+}
+
+function groupContext(group: GroupGap): string {
+  return Object.keys(group.axes)
+    .sort((a, b) => orderIndex(a) - orderIndex(b))
+    .map((axis) => axisName(axis))
+    .join(" × ");
 }
 
 function cell(block: CrossBlock, row: string, col: string): CrossCell {
@@ -252,6 +335,14 @@ const suppressedCrosses = computed(() =>
       <p v-if="panel" class="context">{{ panel.instrument.title }}</p>
       <h1>{{ texts.panel.title }}</h1>
       <p class="subtitle">{{ texts.panel.subtitle }}</p>
+      <p v-if="panel" class="context-line">
+        {{
+          texts.panel.contextLine(
+            panel.total,
+            Object.keys(panel.axisValues).length,
+          )
+        }}
+      </p>
     </header>
 
     <p v-if="loading" class="status">{{ texts.states.loading }}</p>
@@ -263,47 +354,115 @@ const suppressedCrosses = computed(() =>
     </section>
 
     <template v-else-if="panel">
-      <ul class="summary" :aria-label="texts.panel.summary">
-        <li class="stat">
-          <p class="stat-value">{{ panel.total }}</p>
-          <p class="stat-label">{{ texts.panel.peopleLabel }}</p>
-        </li>
-        <li class="stat">
-          <p class="stat-value">{{ published.length }}</p>
-          <p class="stat-label">{{ texts.panel.groupsLabel }}</p>
-        </li>
-        <li class="stat">
-          <p class="stat-value">{{ formatNumber(largestGap, true) }}</p>
-          <p class="stat-label">{{ texts.panel.largestGap }}</p>
-        </li>
-      </ul>
+      <section
+        v-if="topGap && heroScale"
+        class="hero"
+        :aria-label="texts.panel.keyFinding"
+      >
+        <p class="hero-eyebrow">{{ texts.panel.keyFinding }}</p>
+        <h2 class="hero-group">{{ groupDisplayName(topGap.group) }}</h2>
+        <p class="hero-sentence">
+          {{
+            texts.panel.heroGap(
+              formatNumber(topGap.gap),
+              dimensionName(selectedDimension),
+            )
+          }}
+        </p>
 
-      <div class="dimensions">
+        <div class="hero-measure">
+          <div class="hero-track" aria-hidden="true">
+            <span
+              class="hero-segment"
+              :style="{
+                left: heroScale.left + '%',
+                width: heroScale.width + '%',
+              }"
+            ></span>
+            <span
+              class="hero-marker"
+              :style="{ left: heroScale.global + '%' }"
+            ></span>
+            <span
+              class="hero-marker group"
+              :style="{ left: heroScale.group + '%' }"
+            ></span>
+          </div>
+
+          <div class="hero-scale" aria-hidden="true">
+            <span>0</span>
+            <span>100</span>
+          </div>
+
+          <ul class="hero-legend">
+            <li>
+              <span class="dot" aria-hidden="true"></span>
+              {{ texts.panel.scaleGlobal }}
+              <strong>{{ formatNumber(heroScale.global) }}</strong>
+            </li>
+            <li>
+              <span class="dot group" aria-hidden="true"></span>
+              {{ texts.panel.scaleGroup }}
+              <strong>{{ formatNumber(heroScale.group) }}</strong>
+            </li>
+          </ul>
+        </div>
+
+        <p class="hero-meta">
+          {{ texts.panel.people(topGap.group.n ?? 0) }} ·
+          {{ groupContext(topGap.group) }}
+        </p>
+      </section>
+
+      <p v-else class="hero-empty">{{ texts.panel.noPositiveGap }}</p>
+
+      <section
+        class="dimensions-section"
+        :aria-label="texts.panel.dimensionsTitle"
+      >
+        <h2 class="section-title">{{ texts.panel.dimensionsTitle }}</h2>
+        <p class="section-note">{{ texts.panel.dimensionsNote }}</p>
+
         <div
           v-for="b in dimensionBlocks"
           :key="b.group"
-          class="dimension-block"
+          class="dimension-group"
           role="group"
           :aria-label="b.name"
         >
-          <p class="block-title">{{ b.name }}</p>
+          <p class="dimension-group-title">{{ b.name }}</p>
 
-          <div class="chips">
+          <div class="dimension-grid">
             <button
               v-for="d in b.dimensions"
               :key="d.dimension"
               type="button"
-              class="dimension"
-              :class="{ active: d.dimension === selectedDimension }"
+              class="dimension-card"
+              :class="{
+                active: d.dimension === selectedDimension,
+                empty: d.index === null,
+              }"
               :aria-pressed="d.dimension === selectedDimension"
               @click="selectedDimension = d.dimension"
             >
-              {{ dimensionName(d.dimension) }}
-              <span class="value">{{ formatNumber(d.index) }}</span>
+              <span class="dimension-head">
+                <span class="dimension-name">
+                  {{ dimensionName(d.dimension) }}
+                </span>
+                <span class="dimension-index">
+                  {{ formatNumber(d.index) }}
+                </span>
+              </span>
+              <span class="dimension-meter" aria-hidden="true">
+                <span
+                  class="dimension-fill"
+                  :style="{ width: (d.index ?? 0) + '%' }"
+                ></span>
+              </span>
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
       <div class="axes">
         <section
@@ -364,7 +523,7 @@ const suppressedCrosses = computed(() =>
         :aria-label="texts.panel.crosses"
       >
         <div class="crosses-header">
-          <h2 class="block-title">{{ texts.panel.crosses }}</h2>
+          <h2 class="section-title">{{ texts.panel.crosses }}</h2>
           <p class="cross-note">
             {{ texts.panel.crossNote(panel.kCross) }}
           </p>

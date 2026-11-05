@@ -194,36 +194,238 @@ body {
   color: var(--accent);
 }
 
-/* ---------- Cifras resumen ---------- */
+/* ---------- Informe: hallazgo y dimensiones ---------- */
 
-.summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  list-style: none;
-  margin: 26px 0 0;
-  padding: 0;
+.context-line {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
 }
 
-.stat {
-  padding: 14px 18px;
+.hero {
+  margin: 28px 0 0;
+  padding: 22px 26px 20px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
 }
 
-.stat-value {
+.hero-eyebrow {
   margin: 0;
-  font-size: 28px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.1;
+  color: var(--accent);
+}
+
+.hero-group {
+  margin: 6px 0 0;
+  font-size: clamp(22px, 3.4vw, 30px);
+  font-weight: 600;
+  line-height: 1.15;
   letter-spacing: -0.02em;
 }
 
-.stat-label {
-  margin: 2px 0 0;
+.hero-sentence {
+  max-width: 58ch;
+  margin: 8px 0 0;
+  font-size: 17px;
+  color: var(--ink);
+}
+
+.hero-measure {
+  margin-top: 20px;
+}
+
+.hero-track {
+  position: relative;
+  height: 10px;
+  background: var(--surface-2);
+  border-radius: 999px;
+}
+
+.hero-segment {
+  position: absolute;
+  top: 0;
+  height: 10px;
+  background: var(--accent);
+  opacity: 0.35;
+  border-radius: 999px;
+}
+
+.hero-marker {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 18px;
+  background: var(--ink);
+  transform: translateX(-50%);
+}
+
+.hero-marker.group {
+  width: 3px;
+  background: var(--accent);
+}
+
+.hero-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.hero-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
   font-size: 14px;
   color: var(--muted);
+}
+
+.hero-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hero-legend .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.hero-legend .dot.group {
+  background: var(--accent);
+}
+
+.hero-legend strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.hero-meta {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.hero-empty {
+  margin: 28px 0 0;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+.dimensions-section {
+  margin-top: 30px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.section-note {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.dimension-group {
+  margin-top: 16px;
+}
+
+.dimension-group-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dimension-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.dimension-card {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dimension-card:hover {
+  border-color: var(--accent);
+}
+
+.dimension-card.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.dimension-card.empty {
+  color: var(--muted);
+}
+
+.dimension-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dimension-name {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.dimension-index {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dimension-meter {
+  display: block;
+  height: 6px;
+  margin-top: 9px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dimension-fill {
+  display: block;
+  height: 100%;
+  background: var(--muted);
+  border-radius: inherit;
+  transition: width 200ms ease;
+}
+
+.dimension-card.active .dimension-fill {
+  background: var(--accent);
+}
+
+.dimension-card.empty .dimension-meter {
+  opacity: 0.4;
 }
 
 /* ---------- Botones ---------- */
@@ -486,36 +688,13 @@ body {
   align-self: flex-start;
 }
 
-/* ---------- Dimensiones ---------- */
-
-.dimensions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 26px;
-  margin: 22px 0 0;
-}
-
-.dimension-block {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
+/* ---------- Títulos de bloque y opciones ---------- */
 
 .block-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
   color: var(--muted);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 
 .option-block {
@@ -532,42 +711,6 @@ body {
 
 .option-block .option {
   margin-bottom: 0;
-}
-
-.dimension {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 8px 18px;
-  font: inherit;
-  font-size: 16px;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.dimension:hover {
-  border-color: var(--accent);
-}
-
-.dimension.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #ffffff;
-  font-weight: 500;
-}
-
-.dimension .value {
-  color: var(--muted);
-}
-
-.dimension.active .value {
-  color: #ffffff;
-  opacity: 0.85;
 }
 
 /* ---------- Brechas: una tarjeta por eje, filas compactas ---------- */
@@ -677,7 +820,7 @@ body {
   gap: 4px 24px;
 }
 
-.crosses-header .block-title {
+.crosses-header .section-title {
   margin: 0;
 }
 
@@ -895,8 +1038,12 @@ body {
     font-size: 26px;
   }
 
-  .stat-value {
-    font-size: 24px;
+  .hero {
+    padding: 18px 18px 16px;
+  }
+
+  .dimension-grid {
+    grid-template-columns: 1fr;
   }
 
   .row {
@@ -916,6 +1063,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .row-fill,
+  .dimension-fill,
   .button,
   .option {
     transition: none;
