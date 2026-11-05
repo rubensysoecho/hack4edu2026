@@ -1045,7 +1045,7 @@ body {
 
 .axes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 18px;
 }
@@ -1092,10 +1092,13 @@ body {
   text-align: right;
 }
 
-/* Tres columnas como máximo, aunque la pantalla sea muy ancha. */
+/*
+ * Cuatro ejes: 2×2 por defecto y una sola fila en pantallas muy anchas.
+ * Así ninguna tarjeta queda sola con medio ancho vacío al lado.
+ */
 @container (min-width: 1400px) {
   .axes {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
