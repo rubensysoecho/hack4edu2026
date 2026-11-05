@@ -27,8 +27,9 @@ export const texts = {
 
   panel: {
     title: "Brechas de acceso",
-    dimensionsTitle: "Dimensiones",
-    dimensionsNote: "Nivel global de cada dimensión, de 0 a 100.",
+    dimensionsTitle: "Dimensiones de brecha",
+    dimensionsNote:
+      "Selecciona una dimensión para ver cómo varía entre los grupos.",
     subtitle:
       "Distancia de cada grupo al conjunto, en puntos sobre 100. Positivo significa más barrera. El número pequeño son las personas del grupo.",
     gap: "Brecha",
@@ -44,6 +45,22 @@ export const texts = {
     scaleGlobal: "conjunto",
     scaleGroup: "grupo",
     people: (n: number) => (n === 1 ? "1 persona" : `${n} personas`),
+    relevantOnly: (gap: string) => `Solo brechas relevantes (≥ ±${gap})`,
+    distributions: "Distribución de brechas",
+    distributionNote: (dimension: string) =>
+      `Comparación de ${dimension} con el conjunto de respuestas.`,
+    dimensionLabel: (dimension: string) => `Dimensión: ${dimension}`,
+    distributionBy: (axis: string) => `Distribución de brecha por ${axis}`,
+    total: (n: number) => `Total n=${n}`,
+    lessBarrier: "Menos barrera",
+    moreBarrier: "Más barrera",
+    average: "Media",
+    noRelevant: "No hay brechas de ±0,5 puntos o más en este eje.",
+    insufficientComparison: "No hay grupos suficientes para comparar este eje.",
+    lowVariation: (axis: string, spread: string) =>
+      `Variación reducida por ${axis.toLocaleLowerCase()}: ${spread} puntos entre los grupos publicados.`,
+    axisDifference: (axis: string, spread: string, group: string) =>
+      `Diferencia por ${axis.toLocaleLowerCase()}: ${spread} puntos entre los grupos publicados. La mayor barrera declarada aparece en ${group}.`,
     suppressedTable: (k: number) =>
       `No publicable: hay grupos con menos de ${k} personas.`,
     crosses: "Cruces",
