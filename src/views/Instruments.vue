@@ -147,7 +147,7 @@ function viewGaps(id: string) {
 </script>
 
 <template>
-  <main class="page">
+  <main id="main" class="page" tabindex="-1">
     <header class="header">
       <h1>{{ texts.instruments.title }}</h1>
       <p class="subtitle">{{ texts.instruments.subtitle }}</p>

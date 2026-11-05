@@ -330,7 +330,7 @@ const suppressedCrosses = computed(() =>
 </script>
 
 <template>
-  <main class="page">
+  <main id="main" class="page" tabindex="-1">
     <header class="header">
       <p v-if="panel" class="context">{{ panel.instrument.title }}</p>
       <h1>{{ texts.panel.title }}</h1>

@@ -12,6 +12,10 @@ const view = ref<View>("landing");
 </script>
 
 <template>
+  <a v-if="view !== 'landing'" class="skip-link" href="#main">
+    {{ texts.nav.skip }}
+  </a>
+
   <Landing v-if="view === 'landing'" @enter="view = 'gaps'" />
 
   <template v-else>
@@ -21,7 +25,7 @@ const view = ref<View>("landing");
         <span>{{ texts.app }}</span>
       </button>
 
-      <nav class="nav">
+      <nav class="nav" :aria-label="texts.nav.label">
         <button
           type="button"
           :class="{ active: view === 'gaps' }"

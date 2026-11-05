@@ -19,6 +19,8 @@ export const texts = {
   },
 
   nav: {
+    label: "Navegación principal",
+    skip: "Saltar al contenido",
     gaps: "Brechas",
     instruments: "Cuestionarios",
   },
