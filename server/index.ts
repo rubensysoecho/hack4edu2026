@@ -20,15 +20,26 @@ import { calcGaps } from "./gaps.ts";
 import {
   listInstruments,
   listSummaries,
+  loadAnalysis,
   loadInput,
+  saveAnalysis,
   saveInstrument,
   saveQuestion,
 } from "./db.ts";
+import {
+  analyze,
+  buildReportPayload,
+  payloadHash,
+  type ReportResult,
+} from "./ai.ts";
 import { simulateResponses } from "./simulate.ts";
 
 const K = 10;
 const K_CROSS = 20;
 const DEPTH: 1 | 2 = 2;
+
+/** Informes en vuelo: dos montajes simultáneos comparten una sola llamada. */
+const pendingReports = new Map<string, Promise<ReportResult>>();
 
 const app = new Hono();
 
@@ -145,10 +156,67 @@ app.get("/api/panel", (c) => {
   });
 });
 
+app.get("/api/report", async (c) => {
+  const instrument = currentInstrument(c.req.query("instrument"));
+  if (!instrument) {
+    return c.json({ error: "No hay instrumentos. Ejecuta `bun run seed`." }, 404);
+  }
+
+  const result = calcGaps(loadInput(instrument.id), {
+    k: K,
+    kCross: K_CROSS,
+    depth: DEPTH,
+    excludedValues: NON_COMPARISON_VALUES,
+  });
+
+  const payload = buildReportPayload(result, { k: K, kCross: K_CROSS });
+  const model = process.env.OPENROUTER_MODEL?.trim() ?? "";
+  const hash = payloadHash(payload, model);
+
+  const cached = loadAnalysis(hash);
+  if (cached) {
+    try {
+      return c.json({
+        source: "ai",
+        cached: true,
+        report: JSON.parse(cached),
+      });
+    } catch {
+      // Caché corrupta: se regenera.
+    }
+  }
+
+  let pending = pendingReports.get(hash);
+  if (!pending) {
+    pending = analyze(payload);
+    pendingReports.set(hash, pending);
+    pending
+      .catch(() => undefined)
+      .finally(() => pendingReports.delete(hash));
+  }
+
+  const report = await pending;
+  if (report.source === "ai") {
+    saveAnalysis(
+      hash,
+      JSON.stringify({
+        observaciones: report.observaciones,
+        afrontamiento: report.afrontamiento,
+        advertencias: report.advertencias,
+      }),
+    );
+  }
+
+  c.header("Cache-Control", "no-store");
+  return c.json({ source: report.source, cached: false, report });
+});
+
 app.use("/*", serveStatic({ root: "./dist" }));
 app.get("*", serveStatic({ path: "./dist/index.html" }));
 
 export default {
   port: Number(process.env.PORT ?? 3000),
+  // La llamada a la IA puede tardar; el límite por defecto son 10 s.
+  idleTimeout: 120,
   fetch: app.fetch,
 };

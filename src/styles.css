@@ -255,13 +255,215 @@ body {
   color: var(--accent);
 }
 
-/* ---------- Informe: selector de dimensiones ---------- */
+/* ---------- Informe de IA ---------- */
 
 .context-line {
   margin: 6px 0 0;
   font-size: 14px;
   color: var(--muted);
 }
+
+.ai-report {
+  margin-top: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.ai-report-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding: 22px 26px 20px;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.ai-report-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ai-report-head p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.ai-badge {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ai-badge.ai {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.ai-badge.fallback {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.ai-status {
+  padding: 24px 26px;
+}
+
+.ai-status-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ai-status p {
+  max-width: 68ch;
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.ai-status .button-secondary {
+  margin-top: 16px;
+}
+
+.ai-report-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+}
+
+.ai-block {
+  padding: 22px 26px 6px;
+}
+
+.ai-block + .ai-block {
+  border-left: 1px solid var(--surface-2);
+}
+
+.ai-block h3 {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ai-list {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-list li {
+  position: relative;
+  padding-left: 16px;
+}
+
+.ai-list li::before {
+  content: "";
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.ai-item-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ai-item-text {
+  margin: 3px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.ai-derivation {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.ai-derivation span {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ai-fallback {
+  margin: 0;
+  padding: 12px 26px;
+  border-top: 1px solid var(--surface-2);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ai-warnings {
+  padding: 14px 26px 16px;
+  border-top: 1px solid var(--surface-2);
+}
+
+.ai-warnings-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ai-warnings ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ai-warnings li {
+  margin: 2px 0;
+}
+
+.ai-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 26px;
+  background: rgba(216, 229, 246, 0.5);
+  border-top: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+}
+
+.ai-disclaimer strong {
+  flex: none;
+  font-size: 13px;
+}
+
+.ai-disclaimer p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* ---------- Informe: rail de dimensiones ---------- */
 
 .report-layout {
   display: grid;
@@ -1231,6 +1433,15 @@ body {
 }
 
 @media (max-width: 900px) {
+  .ai-report-body {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-block + .ai-block {
+    border-top: 1px solid var(--surface-2);
+    border-left: 0;
+  }
+
   .landing-inner {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -1304,6 +1515,16 @@ body {
   .rail-panel,
   .crosses {
     padding: 20px 16px;
+  }
+
+  .ai-report-head,
+  .ai-status,
+  .ai-block,
+  .ai-fallback,
+  .ai-warnings,
+  .ai-disclaimer {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
   .relevant-toggle {

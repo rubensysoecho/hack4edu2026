@@ -82,6 +82,27 @@ export const texts = {
       "Comparte el formulario o usa el modo demo para simular respuestas.",
   },
 
+  report: {
+    title: "Informe",
+    subtitle: "Lo que dicen los datos, en lenguaje llano.",
+    observations: "Observaciones",
+    actions: "Cómo afrontarlo",
+    withAi: "Con IA",
+    automatic: "Automático",
+    loading: "Preparando el informe…",
+    loadingDetail:
+      "La IA está leyendo los datos. Puede tardar unos segundos; las gráficas ya están disponibles.",
+    error: "No se pudo componer el informe.",
+    retry: "Reintentar",
+    fallbackNote:
+      "La IA no está configurada o no respondió. Este informe se ha generado con la plantilla del sistema y los mismos datos.",
+    warnings: "Advertencias",
+    disclaimerTitle: "Antes de actuar",
+    disclaimer:
+      "Este informe no sustituye una evaluación profesional. Cualquier diagnóstico debe realizarlo un profesional cualificado con instrumentos validados.",
+    derivation: "Validar con",
+  },
+
   instruments: {
     title: "Cuestionarios",
     subtitle:

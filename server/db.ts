@@ -201,6 +201,22 @@ export function deleteResponses(instrumentId: string): void {
   db.query("DELETE FROM responses WHERE instrument_id = ?").run(instrumentId);
 }
 
+/** Caché de informes: una fila por hash de payload y modelo. */
+export function loadAnalysis(hash: string): string | null {
+  const row = db
+    .query("SELECT report_json FROM analyses WHERE payload_hash = ?")
+    .get(hash) as { report_json: string } | null;
+  return row?.report_json ?? null;
+}
+
+export function saveAnalysis(hash: string, reportJson: string): void {
+  db.query(
+    `INSERT INTO analyses (id, payload_hash, report_json, created_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO NOTHING`,
+  ).run(hash, hash, reportJson, new Date().toISOString());
+}
+
 /** Carga todo lo necesario para el motor, ya en la forma que espera. */
 export function loadInput(instrumentId: string): EngineInput {
   const items = db

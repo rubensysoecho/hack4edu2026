@@ -54,6 +54,17 @@ type CrossBlock = {
   cells: Record<string, CrossCell>;
 };
 
+type ReportObservation = { titulo: string; detalle: string };
+type ReportAction = { titulo: string; detalle: string; derivacion: string };
+
+type Report = {
+  observaciones: ReportObservation[];
+  afrontamiento: ReportAction[];
+  advertencias: string[];
+};
+
+type ReportSource = "ai" | "fallback";
+
 const panel = ref<Panel | null>(null);
 const loading = ref(true);
 const error = ref(false);
@@ -61,9 +72,16 @@ const selectedDimension = ref("");
 const relevantOnly = ref(true);
 const RELEVANT_GAP = 0.5;
 
+const report = ref<Report | null>(null);
+const reportSource = ref<ReportSource>("fallback");
+const reportLoading = ref(true);
+const reportError = ref(false);
+
 async function load() {
   loading.value = true;
   error.value = false;
+
+  void loadReport();
 
   try {
     const query = activeInstrument.value
@@ -77,6 +95,30 @@ async function load() {
     error.value = true;
   } finally {
     loading.value = false;
+  }
+}
+
+/** El informe no bloquea las gráficas: se pide en paralelo. */
+async function loadReport() {
+  reportLoading.value = true;
+  reportError.value = false;
+
+  try {
+    const query = activeInstrument.value
+      ? `?instrument=${encodeURIComponent(activeInstrument.value)}`
+      : "";
+    const response = await fetch(`/api/report${query}`);
+    if (!response.ok) throw new Error(String(response.status));
+    const data = (await response.json()) as {
+      source: ReportSource;
+      report: Report;
+    };
+    report.value = data.report;
+    reportSource.value = data.source;
+  } catch {
+    reportError.value = true;
+  } finally {
+    reportLoading.value = false;
   }
 }
 
@@ -336,7 +378,80 @@ const suppressedCrosses = computed(() =>
       <p>{{ texts.panel.noDataDetail }}</p>
     </section>
 
-    <div v-else-if="panel" class="report-layout">
+    <template v-else-if="panel">
+      <section class="ai-report" aria-labelledby="report-title">
+        <header class="ai-report-head">
+          <div>
+            <h2 id="report-title">{{ texts.report.title }}</h2>
+            <p>{{ texts.report.subtitle }}</p>
+          </div>
+          <span
+            v-if="report && !reportLoading"
+            class="ai-badge"
+            :class="reportSource"
+          >
+            {{ reportSource === "ai" ? texts.report.withAi : texts.report.automatic }}
+          </span>
+        </header>
+
+        <div v-if="reportLoading" class="ai-status">
+          <p class="ai-status-title">{{ texts.report.loading }}</p>
+          <p>{{ texts.report.loadingDetail }}</p>
+        </div>
+
+        <div v-else-if="reportError" class="ai-status">
+          <p class="ai-status-title">{{ texts.report.error }}</p>
+          <button type="button" class="button-secondary" @click="loadReport">
+            {{ texts.report.retry }}
+          </button>
+        </div>
+
+        <template v-else-if="report">
+          <div class="ai-report-body">
+            <section class="ai-block" :aria-label="texts.report.observations">
+              <h3>{{ texts.report.observations }}</h3>
+              <ul class="ai-list">
+                <li v-for="o in report.observaciones" :key="o.titulo">
+                  <p class="ai-item-title">{{ o.titulo }}</p>
+                  <p class="ai-item-text">{{ o.detalle }}</p>
+                </li>
+              </ul>
+            </section>
+
+            <section class="ai-block" :aria-label="texts.report.actions">
+              <h3>{{ texts.report.actions }}</h3>
+              <ul class="ai-list">
+                <li v-for="a in report.afrontamiento" :key="a.titulo">
+                  <p class="ai-item-title">{{ a.titulo }}</p>
+                  <p class="ai-item-text">{{ a.detalle }}</p>
+                  <p class="ai-derivation">
+                    <span>{{ texts.report.derivation }}</span>
+                    {{ a.derivacion }}
+                  </p>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <p v-if="reportSource === 'fallback'" class="ai-fallback">
+            {{ texts.report.fallbackNote }}
+          </p>
+
+          <div v-if="report.advertencias.length > 0" class="ai-warnings">
+            <p class="ai-warnings-title">{{ texts.report.warnings }}</p>
+            <ul>
+              <li v-for="w in report.advertencias" :key="w">{{ w }}</li>
+            </ul>
+          </div>
+
+          <footer class="ai-disclaimer">
+            <strong>{{ texts.report.disclaimerTitle }}</strong>
+            <p>{{ texts.report.disclaimer }}</p>
+          </footer>
+        </template>
+      </section>
+
+      <div class="report-layout">
       <aside class="report-rail" :aria-label="texts.panel.dimensionsTitle">
         <div class="rail-panel">
           <div class="rail-heading">
@@ -575,6 +690,7 @@ const suppressedCrosses = computed(() =>
           </div>
         </section>
       </div>
-    </div>
+      </div>
+    </template>
   </main>
 </template>

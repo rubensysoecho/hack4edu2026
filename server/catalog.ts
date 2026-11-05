@@ -402,3 +402,33 @@ export const questionsOf = (dimensions: string[]): CatalogQuestion[] =>
 /** Grupo de navegación de una dimensión. */
 export const groupOf = (dimension: string): DimensionGroup =>
   DIMENSIONS.find((d) => d.id === dimension)?.group ?? "contexto";
+
+/** Nombre legible de cada grupo de navegación. */
+export const DIMENSION_GROUP_NAMES: Record<DimensionGroup, string> = {
+  acceso: "Acceso digital",
+  barreras: "Barreras de acceso",
+  contexto: "Contexto y participación",
+};
+
+/** Nombre legible de un eje. */
+export const axisName = (axis: string): string =>
+  AXES.find((a) => a.id === axis)?.name ?? axis;
+
+/** Nombre legible de un valor de eje. */
+export const axisValueLabel = (axis: string, value: string): string =>
+  AXIS_VALUE_LABELS[`${axis}=${value}`] ?? value;
+
+const AXIS_VALUE_LABELS: Record<string, string> = {
+  "genero=mujer": "Mujeres",
+  "genero=hombre": "Hombres",
+  "edad=menos_18": "Menos de 18 años",
+  "edad=18-34": "Entre 18 y 34 años",
+  "edad=35-54": "De 35 a 54 años",
+  "edad=55_mas": "55 años o más",
+  "ubicacion=rural": "Zona rural",
+  "ubicacion=urbana": "Zona urbana",
+  "ubicacion=periferia": "Periferia",
+  "idioma=nativo": "Nativo",
+  "idioma=fluido": "Fluido",
+  "idioma=basico": "Básico",
+};

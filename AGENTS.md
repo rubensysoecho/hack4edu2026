@@ -111,10 +111,10 @@ validación, todos valen **1**.
 | Tablas y columnas SQL | inglés, `snake_case` | `questions.position`, `responses.submitted_at` |
 | Rutas y claves JSON de la API | inglés, `camelCase` | `POST /api/instruments`, `suppressed` |
 | Clases y variables CSS | inglés | `.row-value`, `--accent` |
-| Variables de entorno | inglés | `AI_PROVIDER` |
+| Variables de entorno | inglés | `OPENROUTER_MODEL` |
 | Ids y valores del catálogo | **español**, no se traducen | `conectividad`, `genero=mujer`, `con_1` |
 | Textos visibles y enunciados | **español** | `texts.panel.title` |
-| Claves del JSON de la IA | **español**, contrato bloqueado | `resumen`, `prioridades` |
+| Claves del JSON de la IA | **español**, contrato bloqueado | `observaciones`, `afrontamiento` |
 | Comentarios y documentación | **español** | este documento |
 
 Reglas:
@@ -135,12 +135,13 @@ Los datos NUNCA los produce la IA.
 - **Programático** (SQL + TypeScript): índices 0–100 por dimensión, brechas,
   índice global, supresión de tablas con celdas `n < k`. Determinista, testeado, auditable.
 - **IA** (OpenRouter, solo OpenRouter): recibe ese JSON ya calculado y escribe
-  conclusiones en lenguaje llano — resumen, prioridades, recomendaciones, advertencias.
+  un informe en dos bloques: observaciones y formas de afrontarlo, más advertencias.
   No calcula, no estima, no inventa cifras.
 
-Si la IA devuelve una cifra que no estaba en el payload, se descarta.
-`temperature: 0` + cache por hash del payload. Si la API falla o
-`AI_PROVIDER=none`, se sirve una plantilla determinista con los mismos números.
+Si la IA devuelve una cifra que no estaba en el payload, el informe se descarta
+y se sirve la plantilla. `temperature: 0` + caché por hash del payload. Si la API
+falla o faltan `OPENROUTER_API_KEY` y `OPENROUTER_MODEL`, se sirve una plantilla
+determinista con los mismos números.
 
 Frase para el pitch: **"el sistema mide, la IA explica"**.
 
@@ -164,11 +165,14 @@ Todos los textos visibles viven en `src/texts.ts`, no dispersos en componentes.
 ```
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=
-AI_PROVIDER=openrouter     # openrouter | none
 GOOGLE_FORMS_CLIENT_ID=
 GOOGLE_FORMS_CLIENT_SECRET=
 GOOGLE_FORMS_REFRESH_TOKEN=
 ```
+
+Sin interruptores: si faltan la clave o el modelo, el informe se genera con la
+plantilla y la interfaz lo indica. Para forzar la plantilla en local:
+`OPENROUTER_MODEL= bun run dev`.
 
 ## Modelo de datos
 
@@ -212,22 +216,33 @@ pesos de los ítems respondidos. Si no respondió ninguno, no cuenta para esa di
 
 ## IA: contrato
 
-`server/ai.ts` expone `analyze(payload): Promise<Report>`.
+`server/ai.ts` expone `analyze(payload): Promise<ReportResult>`.
 
 Los símbolos, tipos y campos internos van en inglés. El JSON que devuelve el modelo
 conserva las claves en español que fija el system prompt: `ai.ts` traduce en el borde
 (`Report` ↔ JSON del modelo). El payload solo lleva tablas publicadas y valores
 comparables: ni celdas suprimidas, ni `prefiero_no_responder`, ni el nombre del
-centro. Entrada: los índices y brechas ya calculados. Salida validada con Zod:
+centro. Además se recorta a los grupos de mayor impacto (brecha × personas) y un
+par de contrastes por dimensión, para que el modelo no tenga que resumir 150 filas.
+
+Salida validada con Zod y dos filtros posteriores:
+
+- **Cifras**: todo número citado debe existir en el payload; si no, se descarta.
+- **Vocabulario**: se descartan términos clínicos o la palabra "discriminación".
 
 ```json
 {
-  "resumen": "string",
-  "prioridades": [{ "grupo": "string", "dimension": "string", "motivo": "string" }],
-  "recomendaciones": ["string"],
+  "observaciones": [{ "titulo": "string", "detalle": "string" }],
+  "afrontamiento": [
+    { "titulo": "string", "detalle": "string", "derivacion": "string" }
+  ],
   "advertencias": ["string"]
 }
 ```
+
+`afrontamiento[].derivacion` indica con quién validar la actuación o qué
+evaluación profesional hace falta. El aviso de que el informe no sustituye una
+evaluación profesional lo pone la interfaz, no el modelo.
 
 ### System prompt (verbatim — no modificar sin decisión explícita)
 
@@ -246,9 +261,24 @@ REGLAS INVIOLABLES
 6. Prioriza por impacto: brecha × número de afectados.
 7. Responde en español neutro, para un gestor escolar sin formación técnica.
 
+SOBRE EL PRISMA PROFESIONAL
+8. No nombres trastornos, condiciones clínicas ni diagnósticos. Si los datos sugieren
+   una necesidad de apoyo, recomienda una evaluación por un profesional cualificado
+   con instrumentos validados, sin ponerle nombre.
+9. En "observaciones", explica los datos en lenguaje llano: qué grupo declara más
+   barrera, cuánto, en qué dimensión y cuántas personas son. Sin tecnicismos.
+10. En "afrontamiento", propón líneas de actuación realistas para una escuela, ONG o
+    club. Cada línea indica en "derivacion" con quién validarla o qué evaluación
+    profesional hace falta antes de actuar.
+11. Sé breve y directo: en "titulo", máximo 8 palabras; en "detalle", una o dos
+    frases (máximo 45 palabras); en "derivacion", máximo 25 palabras.
+12. Devuelve entre 3 y 5 elementos en "observaciones" y entre 3 y 5 en
+    "afrontamiento". No más.
+
 DEVUELVE ÚNICAMENTE ESTE JSON:
-{ "resumen": string, "prioridades": [{ "grupo": string, "dimension": string,
-  "motivo": string }], "recomendaciones": string[], "advertencias": string[] }
+{ "observaciones": [{ "titulo": string, "detalle": string }],
+  "afrontamiento": [{ "titulo": string, "detalle": string, "derivacion": string }],
+  "advertencias": string[] }
 ```
 
 ## Skills integradas
@@ -288,4 +318,5 @@ Configurado en `opencode.jsonc` como servidor local `google-forms`.
 2. ~~`db.ts` + `seed.ts` + pantalla `Brechas` → demo visible con datos sintéticos.~~ **hecho**
 3. ~~`forms/fake.ts` + pantalla `Instrumentos` → crear y leer sin Google.~~ **hecho** (simulación en vez de adapter fake)
 4. `forms/google.ts` real (crear, publicar, sync).
-5. `server/ai.ts` + pulido visual. **← siguiente**
+5. ~~`server/ai.ts` + informe en pantalla.~~ **hecho** (`GET /api/report`, plantilla si no hay IA)
+6. Pulido visual y guion del pitch. **← siguiente**
