@@ -49,13 +49,17 @@ export const texts = {
     distributions: "Distribución de brechas",
     distributionNote: (dimension: string) =>
       `Comparación de ${dimension} con el conjunto de respuestas.`,
-    dimensionLabel: (dimension: string) => `Dimensión: ${dimension}`,
     distributionBy: (axis: string) => `Distribución de brecha por ${axis}`,
-    total: (n: number) => `Total n=${n}`,
     lessBarrier: "Menos barrera",
     moreBarrier: "Más barrera",
     average: "Media",
     noRelevant: "No hay brechas de ±0,5 puntos o más en este eje.",
+    hiddenByFilter: (n: number, gap: string) =>
+      n === 1
+        ? `1 grupo con brecha menor a ±${gap} no se muestra.`
+        : `${n} grupos con brecha menor a ±${gap} no se muestran.`,
+    excludedBy: (n: number, axis: string) =>
+      `${n} ${n === 1 ? "persona" : "personas"} sin dato de ${axis.toLocaleLowerCase()}.`,
     insufficientComparison: "No hay grupos suficientes para comparar este eje.",
     lowVariation: (axis: string, spread: string) =>
       `Variación reducida por ${axis.toLocaleLowerCase()}: ${spread} puntos entre los grupos publicados.`,

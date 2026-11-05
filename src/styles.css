@@ -281,6 +281,7 @@ body {
 
 .report-main {
   min-width: 0;
+  container-type: inline-size;
 }
 
 .rail-panel {
@@ -362,14 +363,14 @@ body {
   font-weight: 600;
   letter-spacing: 0.045em;
   text-transform: uppercase;
-  color: #7186a3;
+  color: var(--muted);
 }
 
-.group-mark {
-  width: 11px;
-  height: 11px;
-  border: 2px solid var(--accent);
-  border-radius: 3px;
+.group-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--accent);
 }
 
 .dimension-chips {
@@ -781,7 +782,7 @@ body {
 .axes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  align-items: stretch;
+  align-items: start;
   gap: 18px;
 }
 
@@ -796,41 +797,16 @@ body {
 }
 
 .axis-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 104px;
-  padding: 22px 26px 20px;
+  padding: 20px 26px 18px;
   border-bottom: 1px solid var(--surface-2);
-}
-
-.axis-card-header p {
-  margin: 0 0 5px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #7186a3;
 }
 
 .axis-card-header h3 {
   margin: 0;
   font-size: 19px;
-  line-height: 1.3;
+  line-height: 1.32;
   font-weight: 600;
   letter-spacing: -0.01em;
-}
-
-.axis-total {
-  flex: none;
-  margin-top: 1px;
-  padding: 4px 9px;
-  border-radius: 5px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
 }
 
 .axis-scale {
@@ -838,8 +814,8 @@ body {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 10px;
-  padding: 20px 26px 6px;
-  color: #7186a3;
+  padding: 16px 26px 4px;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -850,6 +826,13 @@ body {
 
 .axis-scale span:last-child {
   text-align: right;
+}
+
+/* Tres columnas como máximo, aunque la pantalla sea muy ancha. */
+@container (min-width: 1400px) {
+  .axes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .distribution-rows {
@@ -863,28 +846,37 @@ body {
 }
 
 .distribution-meta {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 4px 8px;
+  margin-bottom: 9px;
 }
 
 .row-name {
+  flex: 1 1 auto;
+  min-width: 7ch;
   font-size: 15px;
   font-weight: 600;
-  line-height: 1.3;
-  overflow-wrap: anywhere;
+  line-height: 1.35;
+  overflow-wrap: break-word;
 }
 
 .row-n {
-  justify-self: start;
-  padding: 2px 7px;
-  border-radius: 5px;
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 6px;
   background: var(--surface-2);
   font-size: 12px;
-  font-weight: 400;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
   color: var(--muted);
+}
+
+.row-share {
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .row-bar {
@@ -939,6 +931,8 @@ body {
 }
 
 .row-value {
+  flex: none;
+  margin-left: auto;
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
@@ -967,7 +961,10 @@ body {
 }
 
 .axis-excluded {
-  margin: auto 26px 16px;
+  margin: 0 26px 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .axis-summary {
@@ -1322,8 +1319,7 @@ body {
   }
 
   .axis-card-header {
-    min-height: 0;
-    padding: 20px 18px 17px;
+    padding: 18px 18px 16px;
   }
 
   .axis-scale {
@@ -1353,12 +1349,7 @@ body {
   }
 
   .distribution-meta {
-    grid-template-columns: auto 1fr;
-  }
-
-  .row-value {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
+    gap: 3px 6px;
   }
 
   .cross-grid {

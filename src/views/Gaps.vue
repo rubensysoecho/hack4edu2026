@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { activeInstrument } from "../state";
 import { formatNumber, texts } from "../texts";
+import GroupIcon from "../GroupIcon.vue";
 
 type GroupGap = {
   label: string;
@@ -198,8 +199,13 @@ function groupPercentage(table: GapTable, group: GroupGap): string {
   return `${formatNumber((group.n / total) * 100)} %`;
 }
 
-function tableTotal(table: GapTable): number {
-  return table.groups.reduce((sum, group) => sum + (group.n ?? 0), 0);
+/** Grupos que el filtro de relevancia deja fuera, siempre que tengan brecha calculada. */
+function hiddenGroups(table: GapTable): number {
+  if (!relevantOnly.value) return 0;
+  return table.groups.filter((group) => {
+    const gap = group.gaps[selectedDimension.value] ?? null;
+    return gap !== null && Math.abs(gap) < RELEVANT_GAP;
+  }).length;
 }
 
 function axisSummary(table: GapTable, axis: string): string {
@@ -351,7 +357,7 @@ const suppressedCrosses = computed(() =>
             :aria-label="b.name"
           >
             <p class="dimension-group-title">
-              <span class="group-mark" aria-hidden="true"></span>
+              <GroupIcon :group="b.group" />
               {{ b.name }}
             </p>
 
@@ -394,19 +400,13 @@ const suppressedCrosses = computed(() =>
               :aria-label="b.name"
             >
               <header class="axis-card-header">
-                <div>
-                  <p>{{ texts.panel.dimensionLabel(dimensionName(selectedDimension)) }}</p>
-                  <h3>{{ texts.panel.distributionBy(b.name) }}</h3>
-                </div>
-                <span v-if="!b.table.suppressed" class="axis-total">
-                  {{ texts.panel.total(tableTotal(b.table)) }}
-                </span>
+                <h3>{{ texts.panel.distributionBy(b.name) }}</h3>
               </header>
 
               <div v-if="!b.table.suppressed" class="axis-scale" aria-hidden="true">
-                <span>−{{ formatNumber(scaleLimit) }} {{ texts.panel.lessBarrier }}</span>
-                <strong>0,0 {{ texts.panel.average }}</strong>
-                <span>+{{ formatNumber(scaleLimit) }} {{ texts.panel.moreBarrier }}</span>
+                <span>−{{ formatNumber(scaleLimit) }}</span>
+                <strong>0,0</strong>
+                <span>+{{ formatNumber(scaleLimit) }}</span>
               </div>
 
               <p v-if="b.table.suppressed" class="block-notice axis-notice">
@@ -419,7 +419,9 @@ const suppressedCrosses = computed(() =>
                     <span class="row-name">{{ label(g.label) }}</span>
                     <span class="row-n">
                       {{ texts.panel.people(g.n ?? 0) }}
-                      <span v-if="groupPercentage(b.table, g)">({{ groupPercentage(b.table, g) }})</span>
+                      <span v-if="groupPercentage(b.table, g)" class="row-share">
+                        ({{ groupPercentage(b.table, g) }})
+                      </span>
                     </span>
                     <span class="row-value" :class="gapClass(g.gaps[selectedDimension] ?? null)">
                       <span class="row-direction">
@@ -459,8 +461,19 @@ const suppressedCrosses = computed(() =>
                 {{ texts.panel.noRelevant }}
               </p>
 
-              <p v-if="b.table.excluded > 0" class="block-excluded axis-excluded">
-                {{ texts.panel.excluded(b.table.excluded) }}
+              <p
+                v-if="
+                  !b.table.suppressed &&
+                  visibleGroups(b.table).length > 0 &&
+                  hiddenGroups(b.table) > 0
+                "
+                class="axis-excluded"
+              >
+                {{ texts.panel.hiddenByFilter(hiddenGroups(b.table), formatNumber(RELEVANT_GAP)) }}
+              </p>
+
+              <p v-if="b.table.excluded > 0" class="axis-excluded">
+                {{ texts.panel.excludedBy(b.table.excluded, b.name) }}
               </p>
 
               <footer v-if="!b.table.suppressed" class="axis-summary">
