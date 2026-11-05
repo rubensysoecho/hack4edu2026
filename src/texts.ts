@@ -118,19 +118,28 @@ export const texts = {
     compareWithHelp:
       "Opcional. Sin ejes verás el nivel del grupo, sin brechas.",
     questions: (n: number) => (n === 1 ? "1 pregunta" : `${n} preguntas`),
-    create: "Crear cuestionario",
+    generate: "Generar cuestionario",
     cancel: "Cancelar",
-    creating: "Creando…",
+    generating: "Generando…",
     empty: "Todavía no hay cuestionarios.",
-    created: "Cuestionario creado",
-    createdDetail:
-      "En cuanto conectes Google Forms, aquí aparecerá el enlace para compartir.",
-    simulate: "Simular respuestas (modo demo)",
-    simulating: "Generando…",
     viewGaps: "Ver brechas",
     noResponses: "Sin respuestas",
     responses: (n: number) => (n === 1 ? "1 respuesta" : `${n} respuestas`),
-    createError: "No se pudo crear el cuestionario.",
+    generateError:
+      "No se pudo generar el cuestionario. Inténtalo de nuevo.",
+    preview: {
+      title: "Vista previa",
+      note:
+        "Así lo verá quien responda. Todavía no se ha creado en Google Forms.",
+      empty: "Marca al menos una dimensión para ver las preguntas.",
+      untitled: "Cuestionario sin título",
+      anonymous: "Respuestas anónimas",
+      intro:
+        "No se piden datos personales. Los resultados se muestran siempre en conjunto.",
+      required: "Obligatorio",
+      scaleLow: "Nada",
+      scaleHigh: "Mucho",
+    },
   },
 
   states: {

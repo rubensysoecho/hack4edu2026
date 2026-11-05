@@ -807,8 +807,28 @@ body {
 /* ---------- Constructor ---------- */
 
 .builder {
-  max-width: 900px;
+  max-width: 1280px;
   margin: 28px 0 0;
+}
+
+.builder-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
+  align-items: start;
+  gap: 32px;
+}
+
+.builder-form {
+  min-width: 0;
+}
+
+.builder-error {
+  flex-basis: 100%;
+  margin: 0;
+  padding-left: 14px;
+  border-left: 4px solid var(--accent);
+  font-size: 15px;
+  color: var(--ink);
 }
 
 .builder-title {
@@ -961,27 +981,6 @@ body {
   gap: 12px;
 }
 
-.confirmation {
-  margin: 28px 0 0;
-  padding: 20px 24px;
-  background: var(--surface-2);
-  border-radius: 12px;
-  border-left: 4px solid var(--accent);
-}
-
-.confirmation h2 {
-  margin: 0 0 6px;
-  font-size: 19px;
-  font-weight: 600;
-}
-
-.confirmation p {
-  margin: 0 0 16px;
-  max-width: 52ch;
-  font-size: 16px;
-  color: var(--muted);
-}
-
 /* ---------- Rejilla de cuestionarios ---------- */
 
 .grid {
@@ -1048,6 +1047,189 @@ body {
 
 .option-block .option {
   margin-bottom: 0;
+}
+
+/* ---------- Constructor: vista previa del formulario ---------- */
+
+.form-preview {
+  position: sticky;
+  top: 84px;
+  max-height: calc(100svh - 210px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.form-preview-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-bottom: 10px;
+}
+
+.preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.preview-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.preview-note {
+  flex: 1 1 220px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.form-sheet {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(13, 33, 54, 0.08);
+}
+
+.form-sheet-head {
+  padding: 22px;
+  border-top: 6px solid var(--accent);
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.form-sheet-head h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.form-sheet-head h2.placeholder {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.form-sheet-meta {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.form-sheet-intro {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.form-section-head,
+.form-question {
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--surface-2);
+}
+
+.form-section-head {
+  background: var(--surface);
+}
+
+.form-section-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.form-section-head p {
+  margin: 3px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.form-question-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.form-required {
+  color: var(--accent);
+}
+
+.form-options {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.form-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.form-radio {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.form-scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+}
+
+.form-scale-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--muted);
+}
+
+.form-scale-number {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.form-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.form-section:last-child .form-question:last-child {
+  border-bottom: 0;
+}
+
+.form-sheet-empty {
+  margin: 0;
+  padding: 26px 22px;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 /* ---------- Brechas: distribuciones por eje ---------- */
@@ -1507,6 +1689,21 @@ body {
     overflow: visible;
   }
 
+  .builder-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .form-preview {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .form-sheet {
+    max-width: 680px;
+  }
+
   .dimension-chips {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -1572,6 +1769,14 @@ body {
 
   .builder-footer {
     position: static;
+  }
+
+  .form-sheet-head,
+  .form-section-head,
+  .form-question,
+  .form-sheet-empty {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
   .landing-inner {

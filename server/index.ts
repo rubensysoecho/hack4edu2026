@@ -66,6 +66,9 @@ app.post("/api/instruments", async (c) => {
     ? body.dimensions
     : [];
   const axes: string[] = Array.isArray(body.axes) ? body.axes : [];
+  // Modo demo: crea el instrumento y lo rellena con respuestas sintéticas
+  // en la misma petición. El botón «Generar» del constructor lo usa.
+  const demo = body.demo === true;
 
   if (!title) return c.json({ error: "Falta el título" }, 400);
 
@@ -101,11 +104,14 @@ app.post("/api/instruments", async (c) => {
     });
   });
 
+  const responseCount = demo ? simulateResponses(id, 800) : 0;
+
   return c.json(
     {
       id,
       title,
       question_count: questionsOf(validDimensions).length,
+      response_count: responseCount,
       dimensions: validDimensions,
       axes: validAxes,
       form_id: null,
