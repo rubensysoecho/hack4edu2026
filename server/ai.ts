@@ -22,7 +22,7 @@ import {
 import type { GapResult } from "./gaps.ts";
 
 /** Sube cuando cambia el prompt o el contrato: invalida la caché. */
-const PROMPT_VERSION = "report-v3";
+const PROMPT_VERSION = "report-v5";
 
 /** Brecha mínima para que un cruce entre el payload. */
 const CROSS_RELEVANCE = 0.5;
@@ -98,33 +98,39 @@ const reportSchema = z
   })
   .strict();
 
-export const SYSTEM_PROMPT = `Eres analista de equidad educativa para Equilens. Recibes un JSON con índices
-agregados (0-100) ya calculados por el sistema, junto a tamaños de grupo y brechas.
+export const SYSTEM_PROMPT = `Eres analista de equidad educativa para Equilens. Recibes un JSON con niveles
+de barrera (de 0 a 100) ya calculados, tamaños de grupo y diferencias con la media.
 
 REGLAS INVIOLABLES
 1. No calcules, estimes ni inventes cifras. Usa exclusivamente los números del JSON.
    Si un dato no está, no lo menciones.
-2. No interpretes grupos con n < 10. Indícalo en "advertencias".
+2. No interpretes grupos con n < 10. Si no hay ninguno en el JSON, no lo menciones.
 3. No diagnostiques ni describas individuos. El análisis es agregado.
-4. No uses la palabra "discriminación". Habla de "barreras declaradas" o
-   "brechas de acceso".
+4. No uses la palabra "discriminación". Habla de "barreras declaradas".
 5. No atribuyas causas que no estén presentes en los datos.
-6. Prioriza por impacto: brecha × número de afectados.
-7. Responde en español neutro, para un gestor escolar sin formación técnica.
+6. Prioriza por impacto: diferencia × número de personas.
+7. Español neutro, para un gestor escolar sin formación técnica.
 
-SOBRE EL PRISMA PROFESIONAL
-8. No nombres trastornos, condiciones clínicas ni diagnósticos. Si los datos sugieren
-   una necesidad de apoyo, recomienda una evaluación por un profesional cualificado
-   con instrumentos validados, sin ponerle nombre.
-9. En "observaciones", explica los datos en lenguaje llano: qué grupo declara más
-   barrera, cuánto, en qué dimensión y cuántas personas son. Sin tecnicismos.
-10. En "afrontamiento", propón líneas de actuación realistas para una escuela, ONG o
-    club. Cada línea indica en "derivacion" con quién validarla o qué evaluación
-    profesional hace falta antes de actuar.
-11. Sé breve y directo: en "titulo", máximo 8 palabras; en "detalle", una o dos
-    frases (máximo 45 palabras); en "derivacion", máximo 25 palabras.
-12. Devuelve entre 3 y 5 elementos en "observaciones" y entre 3 y 5 en
-    "afrontamiento". No más.
+CÓMO ESCRIBIR
+8. Frases cortas y directas. Una idea por punto. Máximo 2 frases y 30 palabras.
+9. Nada de jerga: no escribas "índice", "dimensión", "brecha" ni "punto de corte".
+   Di "nivel de barrera (de 0 a 100)", "tema" y "diferencia con la media".
+10. Cita como máximo dos cifras por punto: la diferencia y, si aporta, cuántas
+    personas son. Nada de enumerar números.
+11. Empieza por lo que le pasa al grupo, no por cómo se calculó.
+12. En "observaciones", 3 o 4 puntos. En "afrontamiento", 3 o 4 acciones concretas
+    y realistas para una escuela, ONG o club. En "derivacion", di en lenguaje llano
+    con quién consultarlo antes de actuar.
+13. No nombres trastornos, condiciones clínicas ni diagnósticos. Si hace falta apoyo
+    especializado, recomienda una evaluación por un profesional cualificado con
+    instrumentos validados, sin ponerle nombre.
+14. En "advertencias", solo 2 o 3 frases: límites de los datos y grupos pequeños.
+15. No repitas el mismo grupo en varios puntos. Si un grupo destaca en varios temas,
+    resúmelo en una sola frase y usa los demás puntos para otros grupos.
+
+EJEMPLO DE TONO (los corchetes son huecos, no cifras)
+título: "[Grupo] siente más barreras en [tema]"
+detalle: "Este grupo está [diferencia] puntos por encima de la media. Son [n] personas."
 
 DEVUELVE ÚNICAMENTE ESTE JSON:
 { "observaciones": [{ "titulo": string, "detalle": string }],
@@ -461,54 +467,62 @@ function rankGroups(payload: ReportPayload): RankedGroup[] {
 export function buildFallbackReport(payload: ReportPayload): Report {
   const ranked = rankGroups(payload);
   const observations: ReportObservation[] = [];
+
+  // Dos grupos distintos, en temas distintos, si los datos lo permiten.
   const usedDimensions = new Set<string>();
+  const usedGroups = new Set<string>();
+  const picks: RankedGroup[] = [];
 
   for (const item of ranked) {
-    if (usedDimensions.has(item.dimensionName)) continue;
+    if (usedDimensions.has(item.dimensionName) || usedGroups.has(item.name)) continue;
+    picks.push(item);
     usedDimensions.add(item.dimensionName);
-    observations.push({
-      titulo: `Brecha en ${item.dimensionName.toLowerCase()}`,
-      detalle: `${item.name} declara ${formatNumber(item.gap, true)} puntos más de barrera que el conjunto en ${item.dimensionName.toLowerCase()}. Son ${item.n} personas.`,
-    });
-    if (observations.length === 2) break;
+    usedGroups.add(item.name);
+    if (picks.length === 2) break;
   }
 
-  const lowest = [...ranked].sort((a, b) => a.gap - b.gap)[0];
-  if (lowest && observations.length < 4) {
+  if (picks.length < 2) {
+    for (const item of ranked) {
+      if (usedDimensions.has(item.dimensionName)) continue;
+      picks.push(item);
+      usedDimensions.add(item.dimensionName);
+      if (picks.length === 2) break;
+    }
+  }
+
+  for (const item of picks) {
     observations.push({
-      titulo: "Dónde hay menos barrera",
-      detalle: `Entre los grupos con brecha positiva, ${lowest.name} es el más cercano al conjunto: ${formatNumber(lowest.gap, true)} puntos en ${lowest.dimensionName.toLowerCase()}.`,
+      titulo: `${item.name}, más barreras en ${item.dimensionName.toLowerCase()}`,
+      detalle: `Este grupo está ${formatNumber(item.gap)} puntos por encima de la media. Son ${item.n} personas.`,
     });
   }
 
   const highestLevel = [...payload.dimensions].sort((a, b) => b.index - a.index)[0];
   if (highestLevel) {
     observations.push({
-      titulo: "Dimensión con más barrera declarada",
-      detalle: `${highestLevel.name} es la dimensión con el nivel más alto del conjunto: ${formatNumber(highestLevel.index)} sobre 100.`,
+      titulo: "El tema con más barrera",
+      detalle: `${highestLevel.name} es el tema donde se declara más barrera: ${formatNumber(highestLevel.index)} sobre 100.`,
     });
   }
 
   if (observations.length < 3) {
     observations.push({
-      titulo: "Lectura general",
+      titulo: "Sin diferencias claras",
       detalle:
-        "Los datos publicados no muestran diferencias suficientes para señalar un grupo concreto. Conviene ampliar la muestra antes de extraer conclusiones.",
+        "Los datos no permiten señalar un grupo concreto. Conviene ampliar la muestra antes de sacar conclusiones.",
     });
   }
 
   const top = ranked[0];
-  const actions = actionsFor(top?.dimensionGroup ?? "contexto", top?.dimensionName);
+  const actions = actionsFor(top?.dimensionGroup ?? "contexto");
 
   const advertencias: string[] = [];
   if (payload.suppressed.length > 0) {
     advertencias.push(
-      `No se publican estas comparaciones porque alguna celda tiene menos de ${payload.sample.kCross} personas: ${payload.suppressed.join(", ")}.`,
+      `Algunas comparaciones no se muestran porque tienen menos de ${payload.sample.kCross} personas: ${payload.suppressed.join(", ")}.`,
     );
   }
-  advertencias.push(
-    "El informe usa autoinformes agregados: no identifica ni evalúa a personas concretas.",
-  );
+  advertencias.push("Son autoinformes: no permiten diagnosticar a nadie.");
 
   return {
     observaciones: observations.slice(0, 4),
@@ -517,45 +531,46 @@ export function buildFallbackReport(payload: ReportPayload): Report {
   };
 }
 
-function actionsFor(group: string, dimension?: string): ReportAction[] {
-  const focus = dimension ? ` en ${dimension.toLowerCase()}` : "";
-
+function actionsFor(group: string): ReportAction[] {
   const byGroup: Record<string, ReportAction> = {
     acceso: {
-      titulo: "Revisar el acceso técnico",
-      detalle: `Priorizar equipo disponible y conexión estable para las actividades${focus}: préstamo de dispositivos, franjas con red fiable y materiales que funcionen sin conexión.`,
+      titulo: "Facilitar equipo y conexión",
+      detalle:
+        "Ofrece préstamo de dispositivos y una conexión estable para las actividades. Los materiales también pueden funcionar sin conexión.",
       derivacion:
-        "Validar con el equipo técnico y la dirección antes de asignar recursos.",
+        "Consúltalo con el equipo técnico antes de comprar o asignar recursos.",
     },
     barreras: {
-      titulo: "Revisar la accesibilidad de los materiales",
-      detalle: `Revisar contraste, tamaño de letra, subtítulos y alternativas al uso del ratón${focus}. Son ajustes de bajo coste que reducen barreras declaradas.`,
+      titulo: "Revisar si los materiales son accesibles",
+      detalle:
+        "Comprueba el contraste, el tamaño de letra, los subtítulos y las alternativas al ratón. Son cambios sencillos y baratos.",
       derivacion:
-        "Contrastar con especialistas en accesibilidad y con las propias personas afectadas.",
+        "Consúltalo con especialistas en accesibilidad y con las personas afectadas.",
     },
     contexto: {
-      titulo: "Ajustar horarios y canales de participación",
-      detalle: `Ofrecer más de una franja y más de un canal para participar${focus}, y revisar cómo se comunican las expectativas y las normas del grupo.`,
+      titulo: "Dar más opciones para participar",
+      detalle:
+        "Ofrece otra franja horaria y otro canal, y revisa cómo se comunican las normas del grupo.",
       derivacion:
-        "Contrastar con el equipo pedagógico u orientación antes de cambiar la organización.",
+        "Consúltalo con el equipo pedagógico antes de cambiar la organización.",
     },
   };
 
   return [
     byGroup[group] ?? byGroup.contexto!,
     {
-      titulo: "Escuchar a los grupos con más barrera",
+      titulo: "Escuchar a los grupos con más barreras",
       detalle:
-        "Contrastar el dato agregado con las personas afectadas mediante una sesión o un grupo de discusión, sin registrar datos personales.",
+        "Habla con las personas afectadas en una sesión, sin recoger datos personales.",
       derivacion:
-        "Acordar con el equipo responsable qué se pregunta y cómo se devuelve la información.",
+        "Acuerda con el equipo qué se pregunta y cómo se devuelve la información.",
     },
     {
-      titulo: "Separar barrera declarada de diagnóstico",
+      titulo: "No convertir esto en un diagnóstico",
       detalle:
-        "Estos datos son autoinformes agregados y no permiten diagnosticar. Si aparece una necesidad de apoyo concreta, conviene derivarla a una evaluación profesional.",
+        "Son autoinformes agregados: no permiten diagnosticar a nadie. Si hace falta apoyo, deriva el caso.",
       derivacion:
-        "Derivar a orientación o a un profesional cualificado con instrumentos validados; nunca concluir desde este informe.",
+        "Que lo valore un profesional cualificado con instrumentos validados.",
     },
   ];
 }

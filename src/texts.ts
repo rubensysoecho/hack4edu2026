@@ -84,9 +84,11 @@ export const texts = {
 
   report: {
     title: "Informe",
-    subtitle: "Lo que dicen los datos, en lenguaje llano.",
-    observations: "Observaciones",
-    actions: "Cómo afrontarlo",
+    subtitle: "Lo esencial de los datos, explicado sin tecnicismos.",
+    help:
+      "Una diferencia de +3 significa que ese grupo declara 3 puntos más de barrera que la media.",
+    observations: "Qué dicen los datos",
+    actions: "Qué se puede hacer",
     withAi: "Con IA",
     automatic: "Automático",
     loading: "Preparando el informe…",
@@ -95,12 +97,12 @@ export const texts = {
     error: "No se pudo componer el informe.",
     retry: "Reintentar",
     fallbackNote:
-      "La IA no está configurada o no respondió. Este informe se ha generado con la plantilla del sistema y los mismos datos.",
-    warnings: "Advertencias",
+      "La IA no está disponible ahora mismo. Este informe se ha generado automáticamente con los mismos datos.",
+    warnings: "Ten en cuenta",
     disclaimerTitle: "Antes de actuar",
     disclaimer:
-      "Este informe no sustituye una evaluación profesional. Cualquier diagnóstico debe realizarlo un profesional cualificado con instrumentos validados.",
-    derivation: "Validar con",
+      "Este informe no sustituye a un profesional. Con estos datos no se puede diagnosticar a nadie; si hace falta, que lo valore un especialista con pruebas validadas.",
+    derivation: "Consúltalo con",
   },
 
   instruments: {

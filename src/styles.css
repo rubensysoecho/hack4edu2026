@@ -336,6 +336,23 @@ body {
   color: var(--muted);
 }
 
+.ai-report-head .ai-help {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ai-help::before {
+  content: "";
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
 .ai-badge {
   flex: none;
   padding: 4px 10px;

@@ -437,6 +437,7 @@ const suppressedCrosses = computed(() =>
               </button>
             </h2>
             <p>{{ texts.report.subtitle }}</p>
+            <p class="ai-help">{{ texts.report.help }}</p>
           </div>
           <span
             v-if="report && !reportLoading"
