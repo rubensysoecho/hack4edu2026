@@ -160,7 +160,7 @@ Frase para el pitch: **"el sistema mide, la IA explica"**.
 
 Todos los textos visibles viven en `src/texts.ts`, no dispersos en componentes.
 
-### Variables de entorno (`.env`)
+### Variables de entorno (`.env.dev`)
 
 ```
 OPENROUTER_API_KEY=
@@ -169,6 +169,13 @@ GOOGLE_FORMS_CLIENT_ID=
 GOOGLE_FORMS_CLIENT_SECRET=
 GOOGLE_FORMS_REFRESH_TOKEN=
 ```
+
+En desarrollo, `dev.ts` carga `.env.dev` **solo si existe**. Si no existe (o faltan la
+clave y el modelo), la app funciona en modo demo y los informes salen con la plantilla:
+los datos presentados son los de prueba. `bun run seed` y `bun start` no requieren
+`.env.dev`. `.env` y `.env.dev` quedan ignorados por git.
+
+Para IA en producción: `bun --env-file=.env.dev server/index.ts`.
 
 Sin interruptores: si faltan la clave o el modelo, el informe se genera con la
 plantilla y la interfaz lo indica. Para forzar la plantilla en local:

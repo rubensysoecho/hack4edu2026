@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun run dev.ts",
     "test": "bun test",
-    "seed": "bun run seed.ts"
+    "seed": "bun run seed.ts",
+    "start": "bun server/index.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",

@@ -11,11 +11,11 @@ Reto 10 — Hack4Edu 2026: *"Tecnología que encuentre a quien estamos dejando a
 
 **Estado: MVP funcional.** Pensado para una demo que funcione el día del pitch.
 
-> [!WARNING]
-> **Entorno de prueba.** Las credenciales de prueba de la demo **no se guardan en el
-> repositorio**: viven en un `.env` local, ignorado por git. Están limitadas en uso y
-> caducan automáticamente el **12 de noviembre de 2026**. No son credenciales de
-> producción; no las reutilices fuera de esta demo y revócalas al terminar la prueba.
+> [!IMPORTANT]
+> **IA opcional.** Para que los informes usen OpenRouter, crea un `.env.dev` copiando
+> `.env.example` y rellena `OPENROUTER_API_KEY` y `OPENROUTER_MODEL`. Si no existe, el
+> proyecto funciona en modo demo y los informes se generan con la plantilla
+> determinista: los datos presentados son los de prueba.
 
 > **El sistema mide, la IA explica.** Los índices, las brechas y la supresión las
 > calcula un motor determinista. La IA solo redacta un informe en lenguaje llano
@@ -61,8 +61,8 @@ Requisitos: [Bun](https://bun.sh/) y conexión a internet solo si vas a usar la 
 
 ```bash
 bun install
-# Crea .env a partir de .env.example y rellena las claves.
-bun run seed             # opcional: crea el cuestionario de demo
+# Opcional para IA: copia .env.example a .env.dev y rellena la clave y el modelo.
+bun run seed             # crea el cuestionario de demo (datos de prueba)
 bun run dev
 ```
 
@@ -76,10 +76,10 @@ servidor Bun en el puerto 3000.
 
 | Comando | Qué hace |
 | --- | --- |
-| `bun run dev` | Levanta API (`--watch`) y Vite juntos. |
+| `bun run dev` | Levanta API y Vite; carga `.env.dev` si existe. |
 | `bun run seed` | Recrea la base de datos con el cuestionario de demo. |
 | `bunx vite build` | Compila el frontend en `dist/`. |
-| `bun server/index.ts` | Sirve `dist/` y la API (puerto `PORT`, por defecto 3000). |
+| `bun start` | Sirve `dist/` y la API. Para IA: `bun --env-file=.env.dev server/index.ts`. |
 
 No hay suite de tests: el proyecto se verifica ejecutándolo.
 
@@ -87,8 +87,16 @@ No hay suite de tests: el proyecto se verifica ejecutándolo.
 
 ## Variables de entorno
 
-El repositorio no incluye `.env` (está en `.gitignore`). Crea el tuyo a partir de
-`.env.example`:
+Para activar la IA, crea `.env.dev` a partir de `.env.example`:
+
+```bash
+cp .env.example .env.dev
+```
+
+Rellena al menos `OPENROUTER_API_KEY` y `OPENROUTER_MODEL`. `dev.ts` carga `.env.dev`
+solo si existe. Si no existe, o faltan esas variables, el proyecto funciona igual,
+pero los informes se generan con la plantilla determinista (los datos de prueba) y la
+interfaz lo indica. `.env.dev` está ignorado por git.
 
 | Variable | Obligatoria | Uso |
 | --- | --- | --- |

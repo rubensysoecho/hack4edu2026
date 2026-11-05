@@ -3,7 +3,11 @@
  * Levanta la API (con --watch) y Vite, y los apaga juntos.
  */
 
-const api = Bun.spawn(["bun", "--watch", "server/index.ts"], {
+const envFile = (await Bun.file(".env.dev").exists())
+  ? ["--env-file=.env.dev"]
+  : [];
+
+const api = Bun.spawn(["bun", ...envFile, "--watch", "server/index.ts"], {
   stdio: ["inherit", "inherit", "inherit"],
 });
 

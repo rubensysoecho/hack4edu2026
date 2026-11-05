@@ -1,8 +1,10 @@
 node_modules
-dist
 .env
+.env.dev
+dist
 *.db
 *.db-journal
 *.db-shm
 *.db-wal
 .DS_Store
+
