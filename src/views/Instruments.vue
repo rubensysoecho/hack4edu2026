@@ -161,8 +161,13 @@ function viewGaps(id: string) {
       </button>
 
       <section v-if="creating" class="builder">
+        <h2 class="builder-title">{{ texts.instruments.newInstrument }}</h2>
+
         <label class="field">
-          <span class="field-label">{{ texts.instruments.titleLabel }}</span>
+          <span class="field-label step-label">
+            <span class="step-number" aria-hidden="true">1</span>
+            {{ texts.instruments.titleLabel }}
+          </span>
           <input
             v-model="title"
             type="text"
@@ -172,7 +177,10 @@ function viewGaps(id: string) {
         </label>
 
         <fieldset class="field-group">
-          <legend>{{ texts.instruments.whatToMeasure }}</legend>
+          <legend class="step-legend">
+            <span class="step-number" aria-hidden="true">2</span>
+            {{ texts.instruments.whatToMeasure }}
+          </legend>
           <p class="help">{{ texts.instruments.whatToMeasureHelp }}</p>
 
           <div
@@ -198,7 +206,10 @@ function viewGaps(id: string) {
         </fieldset>
 
         <fieldset class="field-group">
-          <legend>{{ texts.instruments.compareWith }}</legend>
+          <legend class="step-legend">
+            <span class="step-number" aria-hidden="true">3</span>
+            {{ texts.instruments.compareWith }}
+          </legend>
           <p class="help">{{ texts.instruments.compareWithHelp }}</p>
 
           <label

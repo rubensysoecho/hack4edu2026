@@ -384,7 +384,7 @@ body {
 }
 
 .dimensions-section {
-  margin-top: 30px;
+  margin-top: 32px;
 }
 
 .section-title {
@@ -582,6 +582,13 @@ body {
   margin: 28px 0 0;
 }
 
+.builder-title {
+  margin: 0 0 22px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 .field {
   display: block;
   margin-bottom: 32px;
@@ -591,6 +598,26 @@ body {
   display: block;
   font-weight: 600;
   margin-bottom: 6px;
+}
+
+.step-label,
+.step-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-number {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .field-input {
@@ -637,7 +664,7 @@ body {
   grid-template-columns: 24px 1fr;
   align-items: start;
   gap: 2px 12px;
-  padding: 13px 16px;
+  padding: 12px 14px;
   margin: 0 0 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -680,12 +707,16 @@ body {
 }
 
 .builder-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 20px;
+  padding: 16px 0;
+  background: var(--bg);
   border-top: 1px solid var(--border);
 }
 
@@ -727,7 +758,7 @@ body {
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  gap: 12px;
   list-style: none;
   margin: 28px 0 0;
   padding: 0;
@@ -736,7 +767,7 @@ body {
 .card {
   display: flex;
   flex-direction: column;
-  padding: 18px 20px 10px;
+  padding: 18px 20px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -776,7 +807,7 @@ body {
 
 .option-block {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 8px;
   margin: 0 0 20px;
 }
@@ -796,15 +827,13 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
   align-items: start;
-  gap: 10px;
-  margin: 20px 0 0;
+  gap: 28px 40px;
+  margin: 24px 0 0;
 }
 
 .axis-block {
-  padding: 14px 18px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
 }
 
 .axis-block .block-title {
@@ -886,7 +915,7 @@ body {
 /* ---------- Cruces ---------- */
 
 .crosses {
-  margin-top: 30px;
+  margin-top: 32px;
 }
 
 .crosses-header {
@@ -918,15 +947,13 @@ body {
 .cross-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
-  margin-top: 14px;
+  gap: 28px 40px;
+  margin-top: 18px;
 }
 
 .cross-block {
-  padding: 14px 18px 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
 }
 
 .cross-title {
@@ -1131,6 +1158,10 @@ body {
   .page {
     padding-top: 32px;
     padding-bottom: 72px;
+  }
+
+  .builder-footer {
+    position: static;
   }
 
   .landing-inner {
